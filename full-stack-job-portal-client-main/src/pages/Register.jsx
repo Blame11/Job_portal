@@ -35,7 +35,7 @@ const Register = () => {
             return;
         } else {
             setIsLoading(true);
-            const user = { username, email, password, role, adminCode };
+            const user = { username, email, password, confirmPassword, role, adminCode };
             // posting
             try {
                 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -132,8 +132,8 @@ const Register = () => {
                                     message: "A valid email is required",
                                 },
                                 pattern: {
-                                    value: /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
-                                    message: "Enter a valid email",
+                                    value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                                    message: "Enter a valid email address",
                                 },
                             })}
                         />
@@ -145,6 +145,9 @@ const Register = () => {
                     </div>
                     <div className="row">
                         <label htmlFor="password">Password</label>
+                        <p className="text-[10px] font-semibold text-gray-600 mb-1">
+                            (Uppercase, lowercase, number, @#$%^&*!, 8-20 chars)
+                        </p>
                         <input
                             type="password"
                             name="password"
@@ -164,9 +167,9 @@ const Register = () => {
                                         "Password is too short (min 8char)",
                                 },
                                 pattern: {
-                                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])/,
+                                    value: /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@#$%^&*!])/,
                                     message:
-                                        "At least one uppercase,one special char and one number",
+                                        "Password needs uppercase, lowercase, number, and special char (@#$%^&*!)",
                                 },
                             })}
                         />

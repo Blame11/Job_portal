@@ -51,7 +51,7 @@ const Login = () => {
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
-                text: error?.response?.data,
+                text: error?.response?.data?.message || error?.message || "Login failed",
             });
         }
         setIsLoading(false);
