@@ -39,11 +39,20 @@ public class JobService {
         job.setJobFacilities(request.getJobFacilities());
         job.setJobContact(request.getJobContact().trim());
         
-        job.setJobType(JobType.fromDisplayValue(
-            request.getJobType() != null ? request.getJobType() : "full-time"
-        ));
-        job.setJobStatus(request.getJobStatus() != null ? 
-            JobStatus.valueOf(request.getJobStatus().toUpperCase()) : JobStatus.PENDING);
+        try {
+            job.setJobType(JobType.fromDisplayValue(
+                request.getJobType() != null ? request.getJobType().toLowerCase() : "full-time"
+            ));
+        } catch (IllegalArgumentException e) {
+            throw new Exception("Invalid job type: " + request.getJobType());
+        }
+        
+        try {
+            job.setJobStatus(request.getJobStatus() != null ? 
+                JobStatus.valueOf(request.getJobStatus().toUpperCase()) : JobStatus.PENDING);
+        } catch (IllegalArgumentException e) {
+            throw new Exception("Invalid job status: " + request.getJobStatus() + ". Valid values: PENDING, INTERVIEW, DECLINED");
+        }
         
         job.setCreatedAt(LocalDateTime.now());
         job.setUpdatedAt(LocalDateTime.now());
@@ -73,8 +82,22 @@ public class JobService {
         if (request.getJobSkills() != null) job.setJobSkills(request.getJobSkills());
         if (request.getJobFacilities() != null) job.setJobFacilities(request.getJobFacilities());
         if (request.getJobContact() != null) job.setJobContact(request.getJobContact().trim());
-        if (request.getJobType() != null) job.setJobType(JobType.fromDisplayValue(request.getJobType()));
-        if (request.getJobStatus() != null) job.setJobStatus(JobStatus.valueOf(request.getJobStatus().toUpperCase()));
+        
+        if (request.getJobType() != null) {
+            try {
+                job.setJobType(JobType.fromDisplayValue(request.getJobType().toLowerCase()));
+            } catch (IllegalArgumentException e) {
+                throw new Exception("Invalid job type: " + request.getJobType());
+            }
+        }
+        
+        if (request.getJobStatus() != null) {
+            try {
+                job.setJobStatus(JobStatus.valueOf(request.getJobStatus().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new Exception("Invalid job status: " + request.getJobStatus() + ". Valid values: PENDING, INTERVIEW, DECLINED");
+            }
+        }
 
         job.setUpdatedAt(LocalDateTime.now());
         return jobRepository.save(job);

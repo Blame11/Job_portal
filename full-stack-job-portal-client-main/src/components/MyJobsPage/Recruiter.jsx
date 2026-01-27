@@ -3,14 +3,13 @@ import React from "react";
 import styled from "styled-components";
 import LoadingComTwo from "../shared/LoadingComTwo";
 
-import { useQuery, useMutation, QueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { updateHandler, buildApiUrl } from "../../utils/FetchHandlers";
 import Swal from "sweetalert2";
-const queryClient = new QueryClient();
 
 const Recruiter = () => {
     const {
-        isPending,
+    isLoading,
         isError,
         data: jobs,
         error,
@@ -18,8 +17,9 @@ const Recruiter = () => {
     } = useQuery({
         queryKey: ["rec-jobs"],
         queryFn: async () => {
+            // Backend exposes recruiter applications at /api/v1/application/recruiter-applications
             const response = await axios.get(
-                buildApiUrl(`/api/v1/application/recruiter-jobs`),
+                buildApiUrl(`/api/v1/application/recruiter-applications`),
                 {
                     withCredentials: true,
                 }
@@ -38,12 +38,13 @@ const Recruiter = () => {
                 text: data?.message,
             });
         },
-        onError: (error, variables, context) => {
-            console.log(error);
+        onError: (error) => {
+            console.error("Update status failed:", error);
+            const msg = error?.response?.data?.message || JSON.stringify(error?.response?.data) || error?.message || "Failed to update status";
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
-                text: error?.response?.data,
+                text: msg,
             });
         },
     });
@@ -75,8 +76,9 @@ const Recruiter = () => {
         }
 
         try {
+            // backend exposes resume download at /{id}/download-resume
             const response = await axios.get(
-                buildApiUrl(`/api/v1/application/${applicationId}/resume`),
+                buildApiUrl(`/api/v1/application/${applicationId}/download-resume`),
                 { 
                     withCredentials: true,
                     responseType: 'blob'
@@ -90,7 +92,7 @@ const Recruiter = () => {
             link.setAttribute('download', `resume.pdf`);
             document.body.appendChild(link);
             link.click();
-            link.parentChild.removeChild(link);
+            document.body.removeChild(link);
         } catch (error) {
             Swal.fire({
                 icon: "error",
@@ -99,7 +101,7 @@ const Recruiter = () => {
             });
         }
     };
-    if (isPending) {
+    if (isLoading) {
         return <LoadingComTwo />;
     }
 
@@ -115,7 +117,7 @@ const Recruiter = () => {
         // console.log(jobs);
     }
 
-    if (!jobs?.length === 0) {
+    if (!jobs || jobs.length === 0) {
         return <h2 className="">No Application found</h2>;
     }
 
@@ -137,16 +139,16 @@ const Recruiter = () => {
                             let i =
                                 index + 1 < 10 ? `0${index + 1}` : index + 1;
                             return (
-                                <tr key={job?._id}>
+                                <tr key={job?.id}>
                                     <td>{i}</td>
-                                    <td>{job?.jobId?.position}</td>
-                                    <td>{job?.jobId?.company}</td>
+                                    <td>{job?.position}</td>
+                                    <td>{job?.company}</td>
                                     <td>{job?.status}</td>
                                     <td className="action-row">
                                         <button
                                             className="action resume"
                                             onClick={() =>
-                                                handleResumeView(job._id)
+                                                handleResumeView(job.id)
                                             }
                                         >
                                             resume
@@ -159,7 +161,7 @@ const Recruiter = () => {
                                                     className="action accept"
                                                     onClick={() =>
                                                         handleAcceptStatus(
-                                                            job._id,
+                                                            job.id,
                                                             job?.recruiterId
                                                         )
                                                     }
@@ -170,7 +172,7 @@ const Recruiter = () => {
                                                     className="action reject"
                                                     onClick={() =>
                                                         handleRejectStatus(
-                                                            job._id,
+                                                            job.id,
                                                             job?.recruiterId
                                                         )
                                                     }
@@ -185,7 +187,7 @@ const Recruiter = () => {
                                                 className="action reject"
                                                 onClick={() =>
                                                     handleRejectStatus(
-                                                        job._id,
+                                                        job.id,
                                                         job?.recruiterId
                                                     )
                                                 }
@@ -199,7 +201,7 @@ const Recruiter = () => {
                                                 className="action accept"
                                                 onClick={() =>
                                                     handleAcceptStatus(
-                                                        job._id,
+                                                        job.id,
                                                         job?.recruiterId
                                                     )
                                                 }

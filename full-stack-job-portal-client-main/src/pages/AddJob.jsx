@@ -48,11 +48,33 @@ const AddJob = () => {
 
     const onSubmit = async (data) => {
         setIsLoading(true);
+        
+        // Validate that skills and facilities are not empty
+        if (!skills || skills.length === 0) {
+            Swal.fire({
+                icon: "error",
+                title: "Validation Error",
+                text: "Please add at least one skill",
+            });
+            setIsLoading(false);
+            return;
+        }
+        
+        if (!facilities || facilities.length === 0) {
+            Swal.fire({
+                icon: "error",
+                title: "Validation Error",
+                text: "Please add at least one facility",
+            });
+            setIsLoading(false);
+            return;
+        }
+        
         const newJob = {
             company: data?.company,
             position: data?.position,
-            jobStatus: data?.status,
-            jobType: data?.type,
+            jobStatus: data?.status?.toUpperCase() || "PENDING",
+            jobType: data?.type?.toLowerCase() || "full-time",
             jobLocation: data?.location,
             jobVacancy: data?.vacancy,
             jobSalary: data?.salary,
@@ -63,7 +85,7 @@ const AddJob = () => {
             jobContact: data?.contact,
         };
 
-        console.log(newJob)
+        console.log(newJob);
         // posting;
         try {
             const response = await axios.post(
@@ -86,10 +108,14 @@ const AddJob = () => {
             // navigate("/");
         } catch (error) {
             console.log(error);
+            // Backend returns validation errors as { result: ["msg1", "msg2"], message: "Validation failed" }
+            const resp = error?.response?.data;
+            const backendMsgs = resp?.result && Array.isArray(resp.result) ? resp.result.join("; ") : null;
+            const text = backendMsgs || resp?.message || (typeof resp === "string" ? resp : JSON.stringify(resp)) || error.message;
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
-                text: error?.response?.data,
+                text,
             });
         }
         setIsLoading(false);
@@ -153,8 +179,9 @@ const AddJob = () => {
                                             message: "Too long (max 100char)",
                                         },
                                         minLength: {
-                                            value: 3,
-                                            message: "Too short (max 3char)",
+                                            // Backend requires company between 5 and 100 chars
+                                            value: 5,
+                                            message: "Too short (min 5 char)",
                                         },
                                     })}
                                 />

@@ -2,9 +2,23 @@
 
 import styled from "styled-components";
 import Logo from "../Logo";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useUserContext } from "../../context/UserContext";
+import { useDashboardContext } from "../../Layout/DashboardLayout";
 
 const Navbar = ({ navbarRef }) => {
+    const navigate = useNavigate();
+    const { user, handleFetchMe } = useUserContext();
+    // handleLogout is provided by DashboardLayout; guard in case Navbar is used outside
+    const dashContext = useDashboardContext();
+    const handleLogout = dashContext?.handleLogout;
+
+    const doLogout = async () => {
+        if (handleLogout) await handleLogout();
+        handleFetchMe();
+        navigate("/");
+    };
+
     return (
         <Wrapper ref={navbarRef}>
             <div className="container">
@@ -13,12 +27,21 @@ const Navbar = ({ navbarRef }) => {
                     <NavLink className="nav-item" to="/all-jobs">
                         Jobs
                     </NavLink>
+                    <NavLink className="nav-item" to="/about">
+                        About
+                    </NavLink>
                     <NavLink className="nav-item hidden sm:block" to="/dashboard">
                         Dashboard
                     </NavLink>
-                    <NavLink className="nav-item" to="/login">
-                        <span className="bg-[#247BF7] text-white px-6 py-2 rounded"> Login</span>
-                    </NavLink>
+                    {!user?.email ? (
+                        <NavLink className="nav-item" to="/login">
+                            <span className="bg-[#247BF7] text-white px-6 py-2 rounded"> Login</span>
+                        </NavLink>
+                    ) : (
+                        <button className="nav-item" onClick={doLogout}>
+                            <span className="bg-[#247BF7] text-white px-6 py-2 rounded"> Logout</span>
+                        </button>
+                    )}
                 </div>
             </div>
         </Wrapper>

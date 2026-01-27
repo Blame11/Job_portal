@@ -45,6 +45,9 @@ public class CreateJobRequest {
     @NotBlank(message = "Job contact is required")
     private String jobContact;
     
+    @Pattern(regexp = "full-time|part-time|internship", message = "Job type must be 'full-time', 'part-time', or 'internship'")
     private String jobType;
+    
+    @Pattern(regexp = "(?i)pending|interview|declined", message = "Job status must be 'PENDING', 'INTERVIEW', or 'DECLINED'")
     private String jobStatus;
 }

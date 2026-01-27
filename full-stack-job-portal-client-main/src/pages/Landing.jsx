@@ -28,11 +28,8 @@ const Landing = () => {
                             Today!
                         </h1>
                         <p>
-                            Lorem ipsum dolor, sit amet consectetur adipisicing
-                            elit. Illo perferendis dignissimos eligendi voluptas
-                            exercitationem, eius aut mollitia quasi nisi
-                            voluptatem similique, tempore totam, odit
-                            repellendus non. Dolores eos animi recusandae.
+                            Find verified job postings from trusted recruiters.
+                            Search by role, location, or skill — and apply in a few clicks.
                         </p>
                         <div className="btn-grp">
                             <Link className="btn" to="/all-jobs">

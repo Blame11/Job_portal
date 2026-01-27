@@ -24,7 +24,7 @@ const Applicant = () => {
             link.setAttribute('download', `resume.pdf`);
             document.body.appendChild(link);
             link.click();
-            link.parentChild.removeChild(link);
+            document.body.removeChild(link);
         } catch (error) {
             Swal.fire({
                 icon: "error",
@@ -35,7 +35,7 @@ const Applicant = () => {
     };
 
     const {
-        isPending,
+        isLoading,
         isError,
         data: jobs,
         error,
@@ -50,7 +50,7 @@ const Applicant = () => {
         },
     });
 
-    if (isPending) {
+    if (isLoading) {
         return <LoadingComTwo />;
     }
 
@@ -62,7 +62,7 @@ const Applicant = () => {
         console.log(jobs);
     }
 
-    if (!jobs?.length === 0) {
+    if (!jobs || jobs.length === 0) {
         return <h2 className="">No job found</h2>;
     }
 
@@ -80,19 +80,19 @@ const Applicant = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {jobs?.map((job, index) => {
+            {jobs?.map((job, index) => {
                             let i =
                                 index + 1 < 10 ? `0${index + 1}` : index + 1;
                             return (
-                                <tr key={jobs?.jobId?._id}>
+                <tr key={job?.id}>
                                     <td>{i}</td>
-                                    <td>{job?.jobId?.position}</td>
-                                    <td>{job?.jobId?.company}</td>
+                                    <td>{job?.position}</td>
+                                    <td>{job?.company}</td>
                                     <td className="action-row">
                                         {job?.status}
                                         {/* <button
                                             className="action delete"
-                                            onClick={() => deleteModal(job._id)}
+                                            onClick={() => deleteModal(job.id)}
                                         >
                                             <MdDelete />
                                         </button> */}

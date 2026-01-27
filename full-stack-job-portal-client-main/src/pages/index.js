@@ -1,6 +1,7 @@
 export { default as AddJob } from "./AddJob";
 export { default as Admin } from "./Admin";
 export { default as AllJobs } from "./AllJobs";
+export { default as AboutUs } from "./AboutUs";
 export { default as Job } from "./Job";
 export { default as MyJobs } from "./MyJobs";
 export { default as ManageJobs } from "./ManageJobs";

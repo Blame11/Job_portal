@@ -9,6 +9,7 @@ import {
     Landing,
     Error,
     AllJobs,
+    AboutUs,
     Stats,
     Profile,
     Admin,
@@ -64,6 +65,10 @@ const router = createBrowserRouter([
             {
                 path: "login",
                 element: <Login></Login>,
+            },
+            {
+                path: "about",
+                element: <AboutUs></AboutUs>,
             },
             {
                 path: "dashboard",

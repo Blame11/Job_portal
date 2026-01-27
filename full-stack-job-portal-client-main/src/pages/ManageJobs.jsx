@@ -149,7 +149,7 @@ const ManageJobs = () => {
                             let i =
                                 index + 1 < 10 ? `0${index + 1}` : index + 1;
                             return (
-                                <tr key={job._id}>
+                                <tr key={job.id}>
                                     <td>{i}</td>
                                     <td>{job?.position}</td>
                                     <td>{job?.company}</td>
@@ -162,7 +162,7 @@ const ManageJobs = () => {
                                                 {job?.jobStatus !== "pending" && (
                                                     <button
                                                         className="status-btn pending"
-                                                        onClick={() => updateJobStatus(job._id, "pending")}
+                                                        onClick={() => updateJobStatus(job.id, "pending")}
                                                         title="Mark as Pending"
                                                     >
                                                         Pending
@@ -171,7 +171,7 @@ const ManageJobs = () => {
                                                 {job?.jobStatus !== "interview" && (
                                                     <button
                                                         className="status-btn interview"
-                                                        onClick={() => updateJobStatus(job._id, "interview")}
+                                                            onClick={() => updateJobStatus(job.id, "interview")}
                                                         title="Mark as Interview"
                                                     >
                                                         Interview
@@ -180,7 +180,7 @@ const ManageJobs = () => {
                                                 {job?.jobStatus !== "declined" && (
                                                     <button
                                                         className="status-btn declined"
-                                                        onClick={() => updateJobStatus(job._id, "declined")}
+                                                        onClick={() => updateJobStatus(job.id, "declined")}
                                                         title="Mark as Declined (will reject pending applicants)"
                                                     >
                                                         Decline
@@ -198,7 +198,7 @@ const ManageJobs = () => {
                                             <MdVisibility />
                                         </Link>*/}
                                         <a
-                                            href={`/job/${job._id}`}
+                                            href={`/job/${job.id}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="action view"
@@ -207,14 +207,14 @@ const ManageJobs = () => {
                                         </a>
 
                                         <Link
-                                            to={`/dashboard/edit-job/${job._id}`}
+                                            to={`/dashboard/edit-job/${job.id}`}
                                             className="action edit"
                                         >
                                             <FaRegEdit />
                                         </Link>
                                         <button
                                             className="action delete"
-                                            onClick={() => deleteModal(job._id)}
+                                            onClick={() => deleteModal(job.id)}
                                         >
                                             <MdDelete />
                                         </button>

@@ -92,11 +92,29 @@ const EditJob = () => {
     });
 
     const onSubmit = async (data) => {
+        if (!skills || skills.length === 0) {
+            Swal.fire({
+                icon: "error",
+                title: "Validation Error",
+                text: "Please add at least one skill",
+            });
+            return;
+        }
+
+        if (!facilities || facilities.length === 0) {
+            Swal.fire({
+                icon: "error",
+                title: "Validation Error",
+                text: "Please add at least one facility",
+            });
+            return;
+        }
+
         const updateJob = {
             company: data?.company,
             position: data?.position,
-            jobStatus: data?.status,
-            jobType: data?.type,
+            jobStatus: data?.status?.toUpperCase() || "PENDING",
+            jobType: data?.type?.toLowerCase() || "full-time",
             jobLocation: data?.location,
             jobVacancy: data?.vacancy,
             jobSalary: data?.salary,
@@ -106,7 +124,6 @@ const EditJob = () => {
             jobFacilities: facilities,
             jobContact: data?.contact,
         };
-        // posting;
         updateJobMutation.mutate({
             body: updateJob,
             url: buildApiUrl(`/api/v1/jobs/${id}`),
@@ -230,7 +247,7 @@ const EditJob = () => {
                             <div className="row">
                                 <label htmlFor="status">Job Status</label>
                                 <select
-                                    defaultValue={job?.jobStatus}
+                                    defaultValue={job?.jobStatus?.toLowerCase() || "none"}
                                     name="status"
                                     id="stauts"
                                     {...register("status", {
@@ -269,7 +286,7 @@ const EditJob = () => {
                             <div className="row">
                                 <label htmlFor="type">Job Type</label>
                                 <select
-                                    defaultValue={job?.jobType}
+                                    defaultValue={job?.jobType?.toLowerCase() || "none"}
                                     name="type"
                                     id="type"
                                     {...register("type", {

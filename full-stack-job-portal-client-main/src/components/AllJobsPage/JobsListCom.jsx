@@ -38,7 +38,7 @@ const JobsListCom = () => {
 
             <div className="list-container">
                 {jobs?.result?.map((job) => (
-                    <JobCard key={job._id} job={job} />
+                    <JobCard key={job.id} job={job} />
                 ))}
             </div>
         </Wrapper>

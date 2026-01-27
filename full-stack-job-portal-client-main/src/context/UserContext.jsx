@@ -6,23 +6,31 @@ const userContext = React.createContext();
 const UserContext = ({ children }) => {
     const [userLoading, setUserLoading] = useState(true);
     const [userError, setUserError] = useState({ status: false, message: "" });
-    const [user, setUser] = useState({});
+    const [user, setUser] = useState(null);
 
     const handleFetchMe = async () => {
         setUserLoading(true);
         try {
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-            const response = await axios.get(
-                `${apiBaseUrl}/api/v1/auth/me`,
-                { withCredentials: true }
-            );
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+            const response = await axios.get(`${apiBaseUrl}/api/v1/auth/me`, {
+                withCredentials: true,
+            });
             setUserError({ status: false, message: "" });
             // Ensure role is included in user state
-            const userData = response?.data?.result;
+            const userData = response?.data?.result || {};
+            // Backend returns Role enum (e.g. "RECRUITER"). Normalize to lowercase
+            if (userData && userData.role) {
+                try {
+                    userData.role = String(userData.role).toLowerCase();
+                } catch (e) {
+                    // ignore
+                }
+            }
             setUser(userData);
         } catch (error) {
-            setUserError({ status: true, message: error?.message });
-            setUser({ status: false });
+            const message = error?.response?.data?.message || error?.message || "Failed to fetch user";
+            setUserError({ status: true, message });
+            setUser(null);
         }
         setUserLoading(false);
     };

@@ -138,20 +138,20 @@ const JobCard = ({ job }) => {
                     </div>
                 </div>
                 <div className="end-row">
-                    <Link to={`/job/${job._id}`} className="detail-btn">
+                    <Link to={`/job/${job.id}`} className="detail-btn">
                         details
                     </Link>
                     {user?.role === "user" && (
                         <button
                             className="apply-btn"
-                            onClick={() => handleApply(job._id)}
+                            onClick={() => handleApply(job.id)}
                         >
                             Apply
                         </button>
                     )}
                     {user?._id === job?.createdBy && (
                         <Link
-                            to={`/dashboard/edit-job/${job._id}`}
+                            to={`/dashboard/edit-job/${job.id}`}
                             className="detail-btn"
                         >
                             edit

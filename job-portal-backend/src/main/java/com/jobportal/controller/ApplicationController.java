@@ -1,6 +1,7 @@
 package com.jobportal.controller;
 
 import com.jobportal.dto.ApiResponse;
+import com.jobportal.dto.ApplicationWithJobDTO;
 import com.jobportal.dto.PaginatedResponse;
 import com.jobportal.dto.UpdateApplicationStatusRequest;
 import com.jobportal.model.Application;
@@ -47,8 +48,8 @@ public class ApplicationController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<List<Application>>> getMyApplications() {
         try {
-            User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            List<Application> applications = applicationService.getApplicationsByApplicantId(user.getId());
+            String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+            List<Application> applications = applicationService.getApplicationsByApplicantId(userId);
             return ResponseEntity.ok(ApiResponse.<List<Application>>builder()
                     .status(true)
                     .result(applications)
@@ -62,13 +63,32 @@ public class ApplicationController {
         }
     }
 
+    @GetMapping("/applicant-jobs")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<List<ApplicationWithJobDTO>>> getApplicantJobs() {
+        try {
+            String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+            List<ApplicationWithJobDTO> applications = applicationService.getApplicationsByApplicantIdWithJobs(userId);
+            return ResponseEntity.ok(ApiResponse.<List<ApplicationWithJobDTO>>builder()
+                    .status(true)
+                    .result(applications)
+                    .build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.<List<ApplicationWithJobDTO>>builder()
+                            .status(false)
+                            .message(e.getMessage())
+                            .build());
+        }
+    }
+
     @PostMapping("/apply")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<Application>> applyForJob(
             @RequestParam String jobId,
             @RequestParam(required = false) MultipartFile resume) {
         try {
-            User applicant = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            String applicantId = SecurityContextHolder.getContext().getAuthentication().getName();
             
             Job job = jobService.getJobById(jobId)
                     .orElseThrow(() -> new Exception("Job not found"));
@@ -78,7 +98,7 @@ public class ApplicationController {
                 resumePath = fileUploadService.uploadFile(resume);
             }
             
-            Application application = applicationService.applyForJob(applicant.getId(), job.getCreatedBy(), jobId, resumePath);
+            Application application = applicationService.applyForJob(applicantId, job.getCreatedBy(), jobId, resumePath);
             
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.<Application>builder()
                     .status(true)
@@ -100,8 +120,8 @@ public class ApplicationController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int limit) {
         try {
-            User recruiter = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            Page<Application> applicationPage = applicationService.getApplicationsByRecruiterId(recruiter.getId(), page, limit);
+            String recruiterId = SecurityContextHolder.getContext().getAuthentication().getName();
+            Page<Application> applicationPage = applicationService.getApplicationsByRecruiterId(recruiterId, page, limit);
             
             return ResponseEntity.ok(PaginatedResponse.<Application>builder()
                     .status(true)
@@ -125,10 +145,10 @@ public class ApplicationController {
             @PathVariable String id,
             @Valid @RequestBody UpdateApplicationStatusRequest request) {
         try {
-            User recruiter = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            String recruiterId = SecurityContextHolder.getContext().getAuthentication().getName();
             ApplicationStatus status = ApplicationStatus.valueOf(request.getStatus().toUpperCase());
             
-            Application application = applicationService.updateApplicationStatus(id, status, recruiter.getId());
+            Application application = applicationService.updateApplicationStatus(id, status, recruiterId);
             
             return ResponseEntity.ok(ApiResponse.<Application>builder()
                     .status(true)
@@ -148,13 +168,12 @@ public class ApplicationController {
     @PreAuthorize("isAuthenticated()")
     public void downloadResume(@PathVariable String id, HttpServletResponse response) {
         try {
-            User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            String userId = SecurityContextHolder.getContext().getAuthentication().getName();
             
             Application application = applicationService.getApplicationById(id)
                     .orElseThrow(() -> new Exception("Application not found"));
             
-            // Check authorization: only applicant or recruiter can download
-            if (!applicationService.isApplicantOrRecruiter(id, user.getId())) {
+            if (!applicationService.isApplicantOrRecruiter(id, userId)) {
                 response.setStatus(HttpStatus.FORBIDDEN.value());
                 return;
             }
@@ -164,7 +183,6 @@ public class ApplicationController {
                 return;
             }
             
-            // Extract filename from resume path
             String filename = application.getResume().replace("/uploads/", "");
             String filePath = uploadDir + filename;
             
