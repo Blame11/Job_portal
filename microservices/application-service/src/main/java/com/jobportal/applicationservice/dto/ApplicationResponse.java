@@ -16,4 +16,8 @@ public class ApplicationResponse {
     private String resumePath;
     private String createdAt;
     private String updatedAt;
+    // Job details for easier frontend display
+    private String jobTitle;
+    private String jobPosition;
+    private String jobCompany;
 }

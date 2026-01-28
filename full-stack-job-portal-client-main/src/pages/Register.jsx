@@ -21,8 +21,10 @@ const Register = () => {
         message: "",
     });
     const [isLoading, setIsLoading] = useState(false);
-    const [showAdminCode, setShowAdminCode] = useState(false);
     const navigate = useNavigate();
+    
+    // Watch the role field to show/hide admin code input
+    const selectedRole = watch("role");
 
     const onSubmit = async (data) => {
         // password: A@1abcde
@@ -41,21 +43,31 @@ const Register = () => {
             try {
                 const response = await axios.post(
                     buildApiUrl('/api/v1/auth/register'),
-                    user
+                    user,
+                    { withCredentials: true }
                 );
 
+                console.log('Registration successful:', response.status, response.data);
+                
                 Swal.fire({
                     icon: "success",
                     title: "Hurray...",
-                    text: response?.data?.message,
+                    text: response?.data?.message || "User registered successfully",
+                }).then(() => {
+                    reset();
+                    navigate("/login");
                 });
-                reset();
-                navigate("/login");
             } catch (error) {
+                console.error('Registration error:', error);
+                console.error('Error response:', error?.response?.status, error?.response?.data);
+                const errorMessage = error?.response?.data?.message || 
+                                    error?.response?.data?.error ||
+                                    error?.message ||
+                                    "Registration failed. Please try again.";
                 Swal.fire({
                     icon: "error",
                     title: "Oops...",
-                    text: error?.response?.data?.message || error?.response?.data,
+                    text: errorMessage,
                 });
             }
         }
@@ -202,9 +214,6 @@ const Register = () => {
                         <label htmlFor="role">Select Role</label>
                         <select
                             name="role"
-                            onChange={(e) => {
-                                setShowAdminCode(e.target.value === "admin");
-                            }}
                             {...register("role", {
                                 required: {
                                     value: true,
@@ -223,7 +232,7 @@ const Register = () => {
                             </span>
                         )}
                     </div>
-                    {showAdminCode && (
+                    {selectedRole === "admin" && (
                         <div className="row">
                             <label htmlFor="adminCode">Admin Secret Code</label>
                             <input

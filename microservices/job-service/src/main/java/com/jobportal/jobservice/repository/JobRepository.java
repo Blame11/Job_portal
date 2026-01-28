@@ -15,6 +15,8 @@ public interface JobRepository extends MongoRepository<Job, String> {
 
     Page<Job> findAll(Pageable pageable);
 
+    Page<Job> findByStatus(String status, Pageable pageable);
+
     long countByStatus(String status);
 
     @Query("{ $text: { $search: ?0 } }")
@@ -28,4 +30,7 @@ public interface JobRepository extends MongoRepository<Job, String> {
 
     @Query("{ $or: [ { 'title': { $regex: ?0, $options: 'i' } }, { 'description': { $regex: ?0, $options: 'i' } }, { 'location': { $regex: ?0, $options: 'i' } } ] }")
     Page<Job> searchByMultipleFields(String searchTerm, Pageable pageable);
+
+    @Query("{ $and: [ { $or: [ { 'title': { $regex: ?0, $options: 'i' } }, { 'description': { $regex: ?0, $options: 'i' } }, { 'location': { $regex: ?0, $options: 'i' } } ] }, { 'status': ?1 } ] }")
+    Page<Job> searchByMultipleFieldsAndStatus(String searchTerm, String status, Pageable pageable);
 }

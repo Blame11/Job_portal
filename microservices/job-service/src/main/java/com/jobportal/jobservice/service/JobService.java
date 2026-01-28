@@ -29,6 +29,8 @@ public class JobService {
                 request.getDescription(),
                 request.getSalary(),
                 request.getLocation(),
+                request.getCompany(),
+                request.getPosition(),
                 request.getJobType(),
                 "ACTIVE",
                 userId
@@ -49,9 +51,9 @@ public class JobService {
         
         Page<Job> jobs;
         if (search == null || search.isEmpty()) {
-            jobs = jobRepository.findAll(pageable);
+            jobs = jobRepository.findByStatus("ACTIVE", pageable);
         } else {
-            jobs = jobRepository.searchByMultipleFields(search, pageable);
+            jobs = jobRepository.searchByMultipleFieldsAndStatus(search, "ACTIVE", pageable);
         }
         
         return jobs.map(this::mapToResponse);
@@ -76,6 +78,8 @@ public class JobService {
         job.setDescription(request.getDescription());
         job.setSalary(request.getSalary());
         job.setLocation(request.getLocation());
+        job.setCompany(request.getCompany());
+        job.setPosition(request.getPosition());
         job.setJobType(request.getJobType());
         job.setUpdatedAt(LocalDateTime.now());
 
@@ -120,6 +124,8 @@ public class JobService {
         response.setId(job.getId());
         response.setTitle(job.getTitle());
         response.setDescription(job.getDescription());
+        response.setCompany(job.getCompany());
+        response.setPosition(job.getPosition());
         response.setSalary(job.getSalary());
         response.setLocation(job.getLocation());
         response.setJobType(job.getJobType());

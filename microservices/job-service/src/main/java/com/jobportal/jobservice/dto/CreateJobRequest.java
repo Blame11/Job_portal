@@ -12,5 +12,7 @@ public class CreateJobRequest {
     private String description;
     private String salary;
     private String location;
+    private String company;
+    private String position;
     private String jobType; // FULL_TIME, PART_TIME, CONTRACT
 }

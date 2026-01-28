@@ -13,6 +13,8 @@ public class JobResponse {
     private String description;
     private String salary;
     private String location;
+    private String company;
+    private String position;
     private String jobType;
     private String status;
     private String createdBy;

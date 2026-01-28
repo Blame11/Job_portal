@@ -14,6 +14,8 @@ public interface ApplicationRepository extends MongoRepository<Application, Stri
 
     List<Application> findByApplicantId(String applicantId);
 
+    List<Application> findByRecruiterId(String recruiterId);
+
     Page<Application> findByRecruiterId(String recruiterId, Pageable pageable);
 
     Optional<Application> findByJobIdAndApplicantId(String jobId, String applicantId);

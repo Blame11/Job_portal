@@ -11,6 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,7 +37,7 @@ public class ApplicationService {
     public ApplicationResponse applyForJob(String userId, String jobId, MultipartFile resume) throws Exception {
         // Validate job exists
         try {
-            String jobUrl = jobServiceUrl + "/internal/jobs/" + jobId;
+            String jobUrl = jobServiceUrl + "/api/v1/jobs/internal/" + jobId;
             restTemplate.getForObject(jobUrl, Object.class);
             log.info("Job validated: {}", jobId);
         } catch (Exception e) {
@@ -73,6 +76,36 @@ public class ApplicationService {
                 .map(this::mapToResponse);
     }
 
+    public List<ApplicationResponse> getRecruiterApplicationsList(String recruiterId) {
+        return applicationRepository.findByRecruiterId(recruiterId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<?> getAvailableJobsForApplicant(String userId) {
+        try {
+            // Call job-service directly (internal service communication)
+            String jobsUrl = jobServiceUrl + "/api/v1/jobs?page=0&size=1000";
+            Map<String, Object> response = restTemplate.getForObject(jobsUrl, Map.class);
+            
+            if (response != null && response.containsKey("result")) {
+                Object result = response.get("result");
+                if (result instanceof Map) {
+                    Map<String, Object> resultMap = (Map<String, Object>) result;
+                    Object content = resultMap.get("content");
+                    if (content instanceof List) {
+                        return (List<?>) content;
+                    }
+                }
+            }
+            return List.of();
+        } catch (Exception e) {
+            log.error("Error fetching available jobs for applicant: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     public ApplicationResponse updateApplicationStatus(String applicationId, String userId, String status) {
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Application not found"));
@@ -107,6 +140,32 @@ public class ApplicationService {
         response.setResumePath(application.getResumePath());
         response.setCreatedAt(application.getCreatedAt() != null ? application.getCreatedAt().toString() : null);
         response.setUpdatedAt(application.getUpdatedAt() != null ? application.getUpdatedAt().toString() : null);
+        
+        // Fetch and include job details
+        try {
+            Map<String, Object> jobDetails = getJobDetails(application.getJobId());
+            if (jobDetails != null) {
+                response.setJobTitle((String) jobDetails.get("title"));
+                response.setJobPosition((String) jobDetails.get("position"));
+                response.setJobCompany((String) jobDetails.get("company"));
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch job details for jobId: {}", application.getJobId());
+        }
+        
         return response;
+    }
+    
+    private Map<String, Object> getJobDetails(String jobId) {
+        try {
+            String jobUrl = jobServiceUrl + "/internal/jobs/" + jobId;
+            Map<String, Object> jobResponse = restTemplate.getForObject(jobUrl, Map.class);
+            if (jobResponse != null) {
+                return jobResponse;
+            }
+        } catch (Exception e) {
+            log.error("Error fetching job details for jobId {}: {}", jobId, e.getMessage());
+        }
+        return null;
     }
 }

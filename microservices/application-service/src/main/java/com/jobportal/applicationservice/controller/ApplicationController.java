@@ -17,17 +17,17 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/application")
 @RequiredArgsConstructor
 public class ApplicationController {
 
     private final ApplicationService applicationService;
 
-    @PostMapping("/applications/apply")
+    @PostMapping("/apply")
     public ResponseEntity<ApiResponse<ApplicationResponse>> applyForJob(
             @RequestHeader("X-USER-ID") String userId,
             @RequestParam String jobId,
-            @RequestParam MultipartFile resume) {
+            @RequestParam(required = false) MultipartFile resume) {
         try {
             ApplicationResponse response = applicationService.applyForJob(userId, jobId, resume);
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -42,7 +42,7 @@ public class ApplicationController {
         }
     }
 
-    @GetMapping("/applications")
+    @GetMapping
     public ResponseEntity<ApiResponse<List<ApplicationResponse>>> getMyApplications(
             @RequestHeader("X-USER-ID") String userId) {
         try {
@@ -55,7 +55,7 @@ public class ApplicationController {
         }
     }
 
-    @GetMapping("/applications/recruiter")
+    @GetMapping("/recruiter")
     public ResponseEntity<ApiResponse<Page<ApplicationResponse>>> getRecruiterApplications(
             @RequestHeader("X-USER-ID") String recruiterId,
             @RequestParam(defaultValue = "0") int page,
@@ -70,7 +70,33 @@ public class ApplicationController {
         }
     }
 
-    @PatchMapping("/applications/{id}")
+    @GetMapping("/recruiter-applications")
+    public ResponseEntity<ApiResponse<List<ApplicationResponse>>> getRecruiterApplicationsList(
+            @RequestHeader("X-USER-ID") String recruiterId) {
+        try {
+            List<ApplicationResponse> applications = applicationService.getRecruiterApplicationsList(recruiterId);
+            return ResponseEntity.ok(new ApiResponse<>(true, applications, "Applications retrieved successfully"));
+        } catch (Exception e) {
+            log.error("Get recruiter applications list error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, null, "Failed to retrieve applications"));
+        }
+    }
+
+    @GetMapping("/applicant-jobs")
+    public ResponseEntity<ApiResponse<List<?>>> getApplicantJobs(
+            @RequestHeader("X-USER-ID") String userId) {
+        try {
+            List<?> jobs = applicationService.getAvailableJobsForApplicant(userId);
+            return ResponseEntity.ok(new ApiResponse<>(true, jobs, "Jobs retrieved successfully"));
+        } catch (Exception e) {
+            log.error("Get applicant jobs error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, null, "Failed to retrieve jobs"));
+        }
+    }
+
+    @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<ApplicationResponse>> updateApplicationStatus(
             @PathVariable String id,
             @RequestHeader("X-USER-ID") String userId,
@@ -89,7 +115,7 @@ public class ApplicationController {
         }
     }
 
-    @GetMapping("/applications/{id}/download-resume")
+    @GetMapping("/{id}/download-resume")
     public ResponseEntity<?> downloadResume(@PathVariable String id) {
         // Implementation for file download
         // In production, would need to serve the actual file
@@ -105,10 +131,5 @@ public class ApplicationController {
             log.error("Error getting application counts: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }
-
-    @GetMapping("/health")
-    public ResponseEntity<?> health() {
-        return ResponseEntity.ok().body("{\"status\": \"UP\"}");
     }
 }

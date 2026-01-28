@@ -11,7 +11,7 @@ const JobsListCom = () => {
         return <LoadingComTwo />;
     }
 
-    if (!jobs?.result?.length) {
+    if (!jobs?.result?.content?.length) {
         return (
             <h2 className="text-lg md:text-3xl text-center font-bold mt-24 text-red-600">
                 No Job Found
@@ -23,21 +23,21 @@ const JobsListCom = () => {
             <h5 className="job-count">
                 Shows
                 <span className="fancy">
-                    {jobs?.result?.length < 10
-                        ? `0${jobs?.result?.length}`
-                        : jobs?.result?.length}
+                    {jobs?.result?.content?.length < 10
+                        ? `0${jobs?.result?.content?.length}`
+                        : jobs?.result?.content?.length}
                 </span>
                 of total
                 <span className="fancy">
-                    {jobs?.totalJobs < 10
-                        ? `0${jobs?.totalJobs}`
-                        : jobs?.totalJobs}
+                    {jobs?.result?.totalElements < 10
+                        ? `0${jobs?.result?.totalElements}`
+                        : jobs?.result?.totalElements}
                 </span>
                 Jobs
             </h5>
 
             <div className="list-container">
-                {jobs?.result?.map((job) => (
+                {jobs?.result?.content?.map((job) => (
                     <JobCard key={job.id} job={job} />
                 ))}
             </div>

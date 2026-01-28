@@ -52,7 +52,7 @@ public class AuthController {
         try {
             String token = authService.login(request);
             
-            // Set HTTP-only cookie
+            // Set HTTP-only cookie (no domain restriction for Docker compatibility)
             response.addHeader("Set-Cookie", 
                 String.format("%s=%s; Path=%s; HttpOnly; SameSite=Lax; Max-Age=86400",
                     cookieName, token, cookiePath));
@@ -101,10 +101,5 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-    }
-
-    @GetMapping("/health")
-    public ResponseEntity<?> health() {
-        return ResponseEntity.ok().body("{\"status\": \"UP\"}");
     }
 }

@@ -15,7 +15,7 @@ const PaginationCom = () => {
         // );
         // setItemOffset(newOffset);
         handleJobFetch(
-            buildApiUrl(`/api/v1/jobs?page=${e.selected + 1}&limit=5`)
+            buildApiUrl(`/api/v1/jobs?page=${e.selected}&limit=5`)
         );
     };
 
@@ -25,7 +25,7 @@ const PaginationCom = () => {
                 breakLabel="..."
                 onPageChange={handlePageClick}
                 pageRangeDisplayed={5}
-                pageCount={jobs?.pageCount}
+                pageCount={jobs?.result?.totalPages}
                 previousLabel="<"
                 nextLabel=">"
                 renderOnZeroPageCount={null}

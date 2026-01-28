@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from "react";
 import Wrapper from "../assets/css/wrappers/Dashboard";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 
 import { SmallSidebar, LargeSidebar, DashboardNavbar } from "../components";
 import Swal from "sweetalert2";
@@ -13,11 +13,13 @@ const DashboardContext = createContext();
 const DashboardLayout = () => {
     const { handleFetchMe, user } = useUserContext();
     const [showSidebar, setShowSidebar] = useState(false);
+    const navigate = useNavigate();
 
     const handleLogout = async () => {
         try {
             const response = await axios.post(
                 buildApiUrl(`/api/v1/auth/logout`),
+                {},
                 { withCredentials: true }
             );
             Swal.fire({
@@ -25,13 +27,17 @@ const DashboardLayout = () => {
                 title: "Logout...",
                 text: response?.data?.message,
             });
-            handleFetchMe();
+            // Clear user state and redirect to home
+            await handleFetchMe();
+            navigate("/");
         } catch (error) {
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
-                text: error?.response?.data,
+                text: error?.response?.data?.message || error?.message || "Logout failed",
             });
+            // Still redirect even if there's an error
+            navigate("/");
         }
     };
 

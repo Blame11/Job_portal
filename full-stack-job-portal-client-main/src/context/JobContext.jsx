@@ -25,7 +25,7 @@ const JobContext = ({ children }) => {
 
     useEffect(() => {
         handleJobFetch(
-            buildApiUrl('/api/v1/jobs?page=1')
+            buildApiUrl('/api/v1/jobs?page=0')
         );
     }, []);
     const passing = {

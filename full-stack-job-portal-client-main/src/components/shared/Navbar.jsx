@@ -5,6 +5,9 @@ import Logo from "../Logo";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useUserContext } from "../../context/UserContext";
 import { useDashboardContext } from "../../Layout/DashboardLayout";
+import axios from "axios";
+import { buildApiUrl } from "../../utils/FetchHandlers";
+import Swal from "sweetalert2";
 
 const Navbar = ({ navbarRef }) => {
     const navigate = useNavigate();
@@ -14,9 +17,36 @@ const Navbar = ({ navbarRef }) => {
     const handleLogout = dashContext?.handleLogout;
 
     const doLogout = async () => {
-        if (handleLogout) await handleLogout();
-        handleFetchMe();
-        navigate("/");
+        try {
+            // If we have the dashboard context, use it
+            if (handleLogout) {
+                await handleLogout();
+            } else {
+                // Otherwise, call logout directly
+                const response = await axios.post(
+                    buildApiUrl(`/api/v1/auth/logout`),
+                    {},
+                    { withCredentials: true }
+                );
+                Swal.fire({
+                    icon: "success",
+                    title: "Logout...",
+                    text: response?.data?.message || "Logged out successfully",
+                });
+                // Clear user state
+                await handleFetchMe();
+            }
+            // Navigate to home
+            navigate("/");
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: error?.response?.data?.message || error?.message || "Logout failed",
+            });
+            // Still navigate even if there's an error
+            navigate("/");
+        }
     };
 
     return (

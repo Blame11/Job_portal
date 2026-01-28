@@ -16,13 +16,13 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/jobs")
 @RequiredArgsConstructor
 public class JobController {
 
     private final JobService jobService;
 
-    @PostMapping("/jobs")
+    @PostMapping
     public ResponseEntity<ApiResponse<JobResponse>> createJob(
             @RequestHeader(value = "X-USER-ROLE", required = false) String userRole,
             @RequestHeader("X-USER-ID") String userId,
@@ -43,7 +43,7 @@ public class JobController {
         }
     }
 
-    @GetMapping("/jobs")
+    @GetMapping
     public ResponseEntity<ApiResponse<Page<JobResponse>>> searchJobs(
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
@@ -58,7 +58,20 @@ public class JobController {
         }
     }
 
-    @GetMapping("/jobs/{id}")
+    @GetMapping("/my-jobs")
+    public ResponseEntity<ApiResponse<List<JobResponse>>> getMyJobs(
+            @RequestHeader("X-USER-ID") String userId) {
+        try {
+            List<JobResponse> jobs = jobService.getJobsByRecruiter(userId);
+            return ResponseEntity.ok(new ApiResponse<>(true, jobs, "Your jobs retrieved successfully"));
+        } catch (Exception e) {
+            log.error("Get my jobs error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse<>(false, null, "Failed to retrieve your jobs"));
+        }
+    }
+
+    @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<JobResponse>> getJob(@PathVariable String id) {
         try {
             JobResponse job = jobService.getJob(id);
@@ -73,7 +86,7 @@ public class JobController {
         }
     }
 
-    @PatchMapping("/jobs/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<JobResponse>> updateJob(
             @PathVariable String id,
             @RequestHeader("X-USER-ID") String userId,
@@ -91,7 +104,7 @@ public class JobController {
         }
     }
 
-    @DeleteMapping("/jobs/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteJob(
             @PathVariable String id,
             @RequestHeader("X-USER-ID") String userId) {
@@ -108,7 +121,7 @@ public class JobController {
         }
     }
 
-    @GetMapping("/internal/jobs/{id}")
+    @GetMapping("/internal/{id}")
     public ResponseEntity<JobResponse> getJobInternal(@PathVariable String id) {
         try {
             return ResponseEntity.ok(jobService.getJob(id));
@@ -117,7 +130,7 @@ public class JobController {
         }
     }
 
-    @DeleteMapping("/internal/jobs/user/{userId}")
+    @DeleteMapping("/internal/user/{userId}")
     public ResponseEntity<Void> deleteJobsByUser(@PathVariable String userId) {
         try {
             jobService.deleteJobsByUserId(userId);
@@ -143,10 +156,5 @@ public class JobController {
     public ResponseEntity<?> getMonthlyStats() {
         // For now, return empty list. Can be enhanced later
         return ResponseEntity.ok(List.of());
-    }
-
-    @GetMapping("/health")
-    public ResponseEntity<?> health() {
-        return ResponseEntity.ok().body("{\"status\": \"UP\"}");
     }
 }

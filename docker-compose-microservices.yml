@@ -86,8 +86,8 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET}
       MONGODB_URI: ${USER_MONGODB_URI}
-      JOB_SERVICE_URL: ${JOB_SERVICE_URL}
-      APPLICATION_SERVICE_URL: ${APPLICATION_SERVICE_URL}
+      JOB_SERVICE_URL: http://job-service:3003
+      APPLICATION_SERVICE_URL: http://application-service:3004
       SPRING_PROFILES_ACTIVE: docker
       UPLOAD_DIR: ${UPLOAD_DIR}
     depends_on:
@@ -141,7 +141,7 @@ services:
       MONGODB_URI: ${APPLICATION_MONGODB_URI}
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-      JOB_SERVICE_URL: ${JOB_SERVICE_URL}
+      JOB_SERVICE_URL: http://job-service:3003
       SPRING_PROFILES_ACTIVE: docker
       UPLOAD_DIR: ${UPLOAD_DIR}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE}
@@ -164,11 +164,11 @@ services:
     build:
       context: ./full-stack-job-portal-client-main
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
     container_name: job-portal-frontend
     ports:
       - "80:80"
-    environment:
-      - VITE_API_BASE_URL=http://api-gateway:8080
     depends_on:
       - api-gateway
     networks:

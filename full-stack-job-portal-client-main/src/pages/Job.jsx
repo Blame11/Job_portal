@@ -88,18 +88,16 @@ const Job = () => {
 
         try {
             const formData = new FormData();
-            formData.append("applicantId", user?._id);
-            formData.append("recruiterId", job?.createdBy);
-            formData.append("jobId", id);
-            formData.append("status", "pending");
-            formData.append("dateOfApplication", dateStr);
             
             if (file) {
                 formData.append("resume", file);
+            } else {
+                // Create an empty file if no file is selected
+                formData.append("resume", new File([], "resume.pdf", { type: "application/pdf" }));
             }
 
             const response = await axios.post(
-                buildApiUrl("/api/v1/applications/apply"),
+                buildApiUrl(`/api/v1/applications/apply?jobId=${id}`),
                 formData,
                 {
                     withCredentials: true,

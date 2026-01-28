@@ -5,18 +5,17 @@ import com.jobportal.apigateway.security.JwtValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
-@Component
-public class JwtValidationFilter extends AbstractGatewayFilterFactory<JwtValidationFilter.Config> {
+public class JwtValidationFilter
+        extends AbstractGatewayFilterFactory<JwtValidationFilter.Config> {
 
     private final JwtValidator jwtValidator;
 
@@ -28,51 +27,71 @@ public class JwtValidationFilter extends AbstractGatewayFilterFactory<JwtValidat
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            ServerHttpRequest request = exchange.getRequest();
-            String path = request.getPath().toString();
 
-            // Skip JWT validation for public endpoints
-            if (isPublicPath(path)) {
+            ServerHttpRequest request = exchange.getRequest();
+            String path = request.getPath().value();
+
+            log.info("[JWT Filter] Processing request: {} {}", request.getMethod(), path);
+
+            // 1️⃣ Allow preflight
+            if (request.getMethod() == HttpMethod.OPTIONS) {
+                log.info("[JWT Filter] Allowing OPTIONS request");
                 return chain.filter(exchange);
             }
 
-            // Extract JWT from cookie
+            // 2️⃣ Allow public endpoints
+            if (isPublicPath(path)) {
+                log.info("[JWT Filter] Public path, skipping JWT validation: {}", path);
+                return chain.filter(exchange);
+            }
+
+            log.info("[JWT Filter] Protected path, extracting JWT from cookie");
+
+            // 3️⃣ Extract JWT
             String token = extractTokenFromCookie(request);
-
-            if (token == null || token.isEmpty()) {
-                log.warn("Missing JWT token for path: {}", path);
-                return onError(exchange, HttpStatus.UNAUTHORIZED);
+            if (token == null || token.isBlank()) {
+                log.warn("[JWT Filter] No JWT token found in cookie for path: {}", path);
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
             }
 
-            // Validate JWT
+            log.info("[JWT Filter] JWT token extracted successfully");
+
+            // 4️⃣ Validate JWT
             if (!jwtValidator.isTokenValid(token)) {
-                log.warn("Invalid JWT token for path: {}", path);
-                return onError(exchange, HttpStatus.UNAUTHORIZED);
+                log.warn("[JWT Filter] JWT validation failed for path: {}", path);
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
             }
 
-            // Extract userId and role from token
+            log.info("[JWT Filter] JWT validation successful");
+
+            // 5️⃣ Enrich request
             String userId = jwtValidator.getUserIdFromToken(token);
             String role = jwtValidator.getRoleFromToken(token);
 
-            if (userId == null || role == null) {
-                log.warn("Failed to extract userId/role from token");
-                return onError(exchange, HttpStatus.UNAUTHORIZED);
-            }
+            log.info("[JWT Filter] Adding headers - X-USER-ID: {}, X-USER-ROLE: {}", userId, role);
 
-            // Add headers to request
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header(GatewayConstants.HEADER_USER_ID, userId)
                     .header(GatewayConstants.HEADER_USER_ROLE, role)
                     .build();
 
-            ServerWebExchange modifiedExchange = exchange.mutate().request(modifiedRequest).build();
-            return chain.filter(modifiedExchange);
+            return chain.filter(exchange.mutate().request(modifiedRequest).build());
         };
     }
 
     private boolean isPublicPath(String path) {
-        return Arrays.stream(GatewayConstants.PUBLIC_PATHS)
-                .anyMatch(path::startsWith);
+        List<String> publicPaths = List.of(
+                "/api/v1/auth/register",
+                "/api/v1/auth/login",
+                "/api/v1/auth/logout",
+                "/auth/register",
+                "/auth/login",
+                "/auth/logout",
+                "/health"
+        );
+        return publicPaths.stream().anyMatch(path::startsWith);
     }
 
     private String extractTokenFromCookie(ServerHttpRequest request) {
@@ -81,14 +100,6 @@ public class JwtValidationFilter extends AbstractGatewayFilterFactory<JwtValidat
             return cookies.get(0).getValue();
         }
         return null;
-    }
-
-    private Mono<Void> onError(ServerWebExchange exchange, HttpStatus status) {
-        ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(status);
-        response.getHeaders().add("Content-Type", "application/json");
-        String body = "{\"status\": false, \"message\": \"" + status.getReasonPhrase() + "\"}";
-        return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes())));
     }
 
     public static class Config {
