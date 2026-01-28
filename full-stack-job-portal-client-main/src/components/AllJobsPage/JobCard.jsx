@@ -74,7 +74,7 @@ const JobCard = ({ job }) => {
             }
 
             const response = await axios.post(
-                buildApiUrl("/api/v1/application/apply"),
+                buildApiUrl("/api/v1/applications/apply"),
                 formData,
                 {
                     withCredentials: true,

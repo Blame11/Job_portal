@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { useUserContext } from "../context/UserContext";
+import { buildApiUrl } from "../utils/FetchHandlers";
 
 const Login = () => {
     const { handleFetchMe } = useUserContext();
@@ -29,9 +30,8 @@ const Login = () => {
 
         // posting
         try {
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
             const response = await axios.post(
-                `${apiBaseUrl}/api/v1/auth/login`,
+                buildApiUrl('/api/v1/auth/login'),
                 data,
                 {
                     withCredentials: true,

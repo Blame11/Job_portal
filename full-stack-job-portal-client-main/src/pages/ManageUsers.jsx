@@ -5,7 +5,7 @@ import { CiSquarePlus } from "react-icons/ci";
 import styled from "styled-components";
 
 import Swal from "sweetalert2";
-import { getAllHandler } from "../utils/FetchHandlers";
+import { getAllHandler, buildApiUrl } from "../utils/FetchHandlers";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
@@ -20,7 +20,7 @@ const ManageUsers = () => {
     } = useQuery({
         queryKey: ["users"],
         queryFn: () =>
-            getAllHandler(`https://full-stack-job-portal-server.vercel.app/api/v1/users`),
+            getAllHandler(buildApiUrl('/api/v1/users')),
     });
 
     const updateUserModal = (id, role) => {
@@ -43,7 +43,7 @@ const ManageUsers = () => {
         const updateUser = { id, role };
         try {
             const response = await axios.patch(
-                `https://full-stack-job-portal-server.vercel.app/api/v1/admin/update-role`,
+                buildApiUrl('/api/v1/users/role'),
                 updateUser,
                 { withCredentials: true }
             );

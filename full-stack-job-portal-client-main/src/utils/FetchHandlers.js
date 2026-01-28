@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export const buildApiUrl = (path) => {
     if (path.startsWith('http')) return path;
@@ -8,12 +8,12 @@ export const buildApiUrl = (path) => {
 };
 
 export const getAllHandler = async (url) => {
-    const res = await axios.get(buildApiUrl(url));
+    const res = await axios.get(buildApiUrl(url), { withCredentials: true });
     return res.data;
 };
 
 export const getSingleHandler = async (url) => {
-    const res = await axios.get(buildApiUrl(url));
+    const res = await axios.get(buildApiUrl(url), { withCredentials: true });
     return res?.data?.result;
 };
 
@@ -22,16 +22,16 @@ export const postHandler = async ({ url, body }) => {
 };
 
 export const updateHandler = async ({ url, body }) => {
-    const res = await axios.patch(buildApiUrl(url), body);
+    const res = await axios.patch(buildApiUrl(url), body, { withCredentials: true });
     return res?.data?.result;
 };
 
 export const updateHandlerPut = async ({ url, body }) => {
-    return await axios.put(buildApiUrl(url), body);
+    return await axios.put(buildApiUrl(url), body, { withCredentials: true });
 };
 
 export const deleteHandler = async (url) => {
-    return await axios.delete(buildApiUrl(url));
+    return await axios.delete(buildApiUrl(url), { withCredentials: true });
 };
 
 /**

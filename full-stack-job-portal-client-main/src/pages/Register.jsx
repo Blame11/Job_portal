@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { buildApiUrl } from "../utils/FetchHandlers";
 
 const Register = () => {
     const {
@@ -38,9 +39,8 @@ const Register = () => {
             const user = { username, email, password, confirmPassword, role, adminCode };
             // posting
             try {
-                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
                 const response = await axios.post(
-                    `${apiBaseUrl}/api/v1/auth/register`,
+                    buildApiUrl('/api/v1/auth/register'),
                     user
                 );
 
