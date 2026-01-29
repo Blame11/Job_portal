@@ -13,6 +13,9 @@ const Admin = () => {
             ),
     });
 
+    // Extract result from the response data
+    const stats = data?.result || {};
+
     if (isPending) {
         return <LoadingComTwo />;
     }
@@ -29,7 +32,7 @@ const Admin = () => {
                     {/* Total Members */}
                     <div class="relative p-5 bg-gradient-to-r from-blue-400 to-blue-600 rounded-md overflow-hidden">
                         <div class="relative z-10 mb-4 text-white text-4xl leading-none font-semibold">
-                            {data?.user}
+                            {stats?.totalUsers ?? 0}
                         </div>
                         <div class="relative z-10 text-blue-100 leading-none font-semibold">
                             Total Members
@@ -52,7 +55,7 @@ const Admin = () => {
                     {/* Admin */}
                     <div class="relative p-5 bg-gradient-to-r from-cyan-400 to-cyan-600 rounded-md overflow-hidden">
                         <div class="relative z-10 mb-4 text-white text-4xl leading-none font-semibold">
-                            {data?.admin}
+                            {stats?.totalAdmins ?? 0}
                         </div>
                         <div class="relative z-10 text-blue-100 leading-none font-semibold">
                             Admins
@@ -75,7 +78,7 @@ const Admin = () => {
                     {/* Recruiters */}
                     <div class="relative p-5 bg-gradient-to-r from-cyan-400 to-cyan-600 rounded-md overflow-hidden">
                         <div class="relative z-10 mb-4 text-white text-4xl leading-none font-semibold">
-                            {data?.recruiter}
+                            {stats?.totalRecruiters ?? 0}
                         </div>
                         <div class="relative z-10 text-blue-100 leading-none font-semibold">
                             Recruiters
@@ -98,7 +101,7 @@ const Admin = () => {
                     {/* Members */}
                     <div class="relative p-5 bg-gradient-to-r from-blue-400 to-blue-600 rounded-md overflow-hidden">
                         <div class="relative z-10 mb-4 text-white text-4xl leading-none font-semibold">
-                            {data?.applicant}
+                            {stats?.totalApplicants ?? 0}
                         </div>
                         <div class="relative z-10 text-blue-100 leading-none font-semibold">
                             Applicants
@@ -128,7 +131,7 @@ const Admin = () => {
                     {/* Total Jobs */}
                     <div class="relative p-5 bg-gradient-to-r from-orange-400 to-orange-600 rounded-md overflow-hidden">
                         <div class="relative z-10 mb-4 text-white text-4xl leading-none font-semibold">
-                            {data?.job}
+                            {stats?.totalJobs ?? 0}
                         </div>
                         <div class="relative z-10 text-red-100 leading-none font-semibold">
                             Total Jobs
@@ -151,7 +154,7 @@ const Admin = () => {
                     {/* Pending */}
                     <div class="relative p-5 bg-gradient-to-r from-green-400 to-green-600 rounded-md overflow-hidden">
                         <div class="relative z-10 mb-4 text-white text-4xl leading-none font-semibold">
-                            {data?.pending}
+                            {stats?.pendingApplications ?? 0}
                         </div>
                         <div class="relative z-10 text-blue-100 leading-none font-semibold">
                             Pending
@@ -174,7 +177,7 @@ const Admin = () => {
                     {/* Interview */}
                     <div class="relative p-5 bg-gradient-to-r from-purple-400 to-purple-600 rounded-md overflow-hidden">
                         <div class="relative z-10 mb-4 text-white text-4xl leading-none font-semibold">
-                            {data?.interview}
+                            {stats?.acceptedApplications ?? 0}
                         </div>
                         <div class="relative z-10 text-blue-100 leading-none font-semibold">
                             Interview
@@ -197,7 +200,7 @@ const Admin = () => {
                     {/* Rejected */}
                     <div class="relative p-5 bg-gradient-to-r from-red-400 to-red-600 rounded-md overflow-hidden">
                         <div class="relative z-10 mb-4 text-white text-4xl leading-none font-semibold">
-                            {data?.declined}
+                            {stats?.rejectedApplications ?? 0}
                         </div>
                         <div class="relative z-10 text-red-100 leading-none font-semibold">
                             Declined

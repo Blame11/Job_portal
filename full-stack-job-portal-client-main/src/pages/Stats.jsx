@@ -76,6 +76,10 @@ const Stats = () => {
     if (data) {
         console.log(data);
     }
+    
+    // Extract stats from the API response structure
+    const monthlyStats = data?.result || [];
+    
     return (
         <Wrapper>
             <div className="">
@@ -87,7 +91,7 @@ const Stats = () => {
                 <ResponsiveContainer width="100%" height={200}>
                     <PieChart width={400} height={400}>
                         <Pie
-                            data={data?.defaultStats}
+                            data={monthlyStats && monthlyStats.length > 0 ? monthlyStats : []}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
@@ -96,7 +100,7 @@ const Stats = () => {
                             fill="#8884d8"
                             dataKey="value"
                         >
-                            {data?.defaultStats?.map((entry, index) => (
+                            {monthlyStats && monthlyStats.map((entry, index) => (
                                 <Cell
                                     key={`cell-${index}`}
                                     fill={COLORS[index % COLORS.length]}
@@ -126,7 +130,7 @@ const Stats = () => {
                 </div>
                 {isShowBarChart ? (
                     <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={data?.monthly_stats}>
+                        <BarChart data={monthlyStats}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="date" />
                             <YAxis allowDecimals={false} />
@@ -141,7 +145,7 @@ const Stats = () => {
                     </ResponsiveContainer>
                 ) : (
                     <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={data?.monthly_stats}>
+                        <AreaChart data={monthlyStats}>
                             <CartesianGrid strokeDasharray="3/3" />
                             <XAxis dataKey="date" />
                             <YAxis allowDecimals={false} />

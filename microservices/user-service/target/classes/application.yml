@@ -3,7 +3,7 @@ spring:
     name: user-service
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/user-db}
+      uri: ${MONGODB_URI:mongodb://localhost:27017/auth-db}
   servlet:
     multipart:
       max-file-size: 5MB

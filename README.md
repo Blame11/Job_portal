@@ -36,37 +36,64 @@ The application is built with a modern tech stack using Spring Boot 3 for the ba
 
 ## 🏗️ Architecture
 
-### High-Level Architecture
+### Microservices Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Internet / Browser                        │
-└────────────┬────────────────────────────────────┬───────────┘
-             │                                    │
-             ▼                                    ▼
-    ┌─────────────────┐              ┌──────────────────┐
-    │  Frontend (80)  │              │  Backend (3000)  │
-    │  ├─ React       │──HTTP/CORS──▶│  ├─ Spring Boot  │
-    │  ├─ Vite        │◀─────────────│  ├─ MongoDB      │
-    │  └─ Nginx       │              │  ├─ JWT Auth     │
-    └─────────────────┘              │  └─ REST API     │
-                                     └────────┬─────────┘
-                                              │
-                                              ▼
-                                     ┌──────────────────┐
-                                     │   MongoDB        │
-                                     │   (27017)        │
-                                     │  ├─ Users        │
-                                     │  ├─ Jobs         │
-                                     │  └─ Applications │
-                                     └──────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                    Internet / Browser                           │
+└────────────┬───────────────────────────────────────────────────┘
+             │
+             ▼
+    ┌─────────────────────────────┐
+    │   Nginx (Port 80)           │
+    │   ├─ Frontend (React/Vite)  │
+    │   └─ Reverse Proxy          │
+    └──────────────┬──────────────┘
+                   │
+                   ▼
+    ┌────────────────────────────┐
+    │  API Gateway (8080)        │
+    │  ├─ Request Routing        │
+    │  ├─ JwtValidationFilter    │
+    │  └─ Load Balancing         │
+    └─┬──────────┬──────┬────────┤
+      │          │      │        │
+      ▼          ▼      ▼        ▼
+   ┌─────┐  ┌─────┐ ┌─────┐ ┌──────────┐
+   │Auth │  │User │ │Job  │ │Application│
+   │Svc  │  │Svc  │ │Svc  │ │Service   │
+   │3001 │  │3002 │ │3003 │ │3004      │
+   └──┬──┘  └──┬──┘ └──┬──┘ └─────┬────┘
+      │         │      │          │
+      └─────────┴──────┴──────────┘
+                │
+                ▼
+      ┌─────────────────────┐
+      │   MongoDB (27017)   │
+      │ ┌─────────────────┐ │
+      │ │ auth-db         │ │ (Users from Auth)
+      │ ├─ user-db        │ │ (User profiles)
+      │ ├─ job-db         │ │ (Job postings)
+      │ └─ application-db │ │ (Applications)
+      └─────────────────────┘
 ```
+
+### Microservices Overview
+
+| Service | Port | Database | Purpose |
+|---------|------|----------|---------|
+| **API Gateway** | 8080 | - | Routes requests, validates JWT |
+| **Auth Service** | 3001 | auth-db | User registration, login, authentication |
+| **User Service** | 3002 | auth-db | User profile management, statistics |
+| **Job Service** | 3003 | job-db | Job CRUD operations, listings |
+| **Application Service** | 3004 | application-db | Job applications, status tracking |
 
 ### Data Flow
 
-1. **User Registration/Login**: Frontend sends credentials → Backend validates → JWT token generated → Token stored as HTTP-only cookie
-2. **Job Management**: Frontend sends requests with JWT → Backend authenticates → Database operations → Response sent back
-3. **Application Management**: Job seekers apply → Backend creates application record → Recruiters view applicants
+1. **User Registration/Login**: Frontend → API Gateway → Auth Service → Stores in auth-db → JWT generated → Returned to Frontend
+2. **Job Management**: Frontend → API Gateway → Job Service → Stores in job-db → Response returned
+3. **User Dashboard**: Frontend → API Gateway (with JWT) → User Service → Queries auth-db → Returns statistics
+4. **Job Applications**: Frontend → API Gateway → Application Service → Stores in application-db → Notification sent
 
 ---
 
@@ -107,94 +134,154 @@ The application is built with a modern tech stack using Spring Boot 3 for the ba
 ```
 job-portal/
 │
-├── job-portal-backend/              # Java/Spring Boot backend
-│   ├── src/main/java/com/jobportal/
-│   │   ├── controller/              # REST endpoints
-│   │   │   ├── AuthController.java
-│   │   │   ├── UserController.java
-│   │   │   ├── JobController.java
-│   │   │   ├── ApplicationController.java
-│   │   │   └── AdminController.java
-│   │   ├── service/                 # Business logic
-│   │   │   ├── UserService.java
-│   │   │   ├── JobService.java
-│   │   │   ├── ApplicationService.java
-│   │   │   ├── FileUploadService.java
-│   │   │   └── AdminService.java
-│   │   ├── model/                   # Data models
-│   │   │   ├── User.java
-│   │   │   ├── Job.java
-│   │   │   ├── Application.java
-│   │   │   ├── Role.java
-│   │   │   ├── JobStatus.java
-│   │   │   ├── JobType.java
-│   │   │   └── ApplicationStatus.java
-│   │   ├── repository/              # Database access
-│   │   │   ├── UserRepository.java
-│   │   │   ├── JobRepository.java
-│   │   │   └── ApplicationRepository.java
-│   │   ├── security/                # JWT & Authentication
-│   │   │   ├── JwtTokenProvider.java
-│   │   │   └── JwtAuthenticationFilter.java
-│   │   ├── config/                  # Configuration classes
-│   │   │   ├── SecurityConfig.java
-│   │   │   ├── JwtProperties.java
-│   │   │   └── CorsProperties.java
-│   │   ├── dto/                     # Data Transfer Objects
-│   │   │   ├── RegisterRequest.java
-│   │   │   ├── LoginRequest.java
-│   │   │   ├── ApiResponse.java
-│   │   │   └── ...
-│   │   └── exception/               # Exception handling
-│   │       └── GlobalExceptionHandler.java
-│   ├── src/main/resources/
-│   │   └── application.yml          # Configuration file
-│   ├── Dockerfile                   # Docker build config
-│   └── pom.xml                      # Maven dependencies
+├── microservices/                   # Microservices backend
+│   ├── api-gateway/                 # API Gateway (Spring Cloud Gateway)
+│   │   ├── src/main/java/
+│   │   │   └── com/jobportal/gateway/
+│   │   │       ├── filter/          # JWT Validation Filter
+│   │   │       ├── config/          # Route Configuration
+│   │   │       └── GatewayApplication.java
+│   │   ├── pom.xml
+│   │   ├── Dockerfile
+│   │   └── target/
+│   │
+│   ├── auth-service/                # Authentication Service
+│   │   ├── src/main/java/
+│   │   │   └── com/jobportal/authservice/
+│   │   │       ├── controller/      # Auth endpoints
+│   │   │       ├── service/         # Auth logic
+│   │   │       ├── model/           # User model
+│   │   │       ├── repository/      # MongoDB access
+│   │   │       └── security/        # JWT provider
+│   │   ├── src/main/resources/
+│   │   │   └── application.yml
+│   │   ├── pom.xml
+│   │   ├── Dockerfile
+│   │   └── target/
+│   │
+│   ├── user-service/                # User Service
+│   │   ├── src/main/java/
+│   │   │   └── com/jobportal/userservice/
+│   │   │       ├── controller/      # User endpoints
+│   │   │       ├── service/         # User logic
+│   │   │       ├── model/           # User model
+│   │   │       └── repository/      # MongoDB access
+│   │   ├── src/main/resources/
+│   │   │   └── application.yml
+│   │   ├── pom.xml
+│   │   ├── Dockerfile
+│   │   └── target/
+│   │
+│   ├── job-service/                 # Job Service
+│   │   ├── src/main/java/
+│   │   │   └── com/jobportal/jobservice/
+│   │   │       ├── controller/      # Job endpoints
+│   │   │       ├── service/         # Job logic
+│   │   │       ├── model/           # Job model
+│   │   │       └── repository/      # MongoDB access
+│   │   ├── src/main/resources/
+│   │   │   └── application.yml
+│   │   ├── pom.xml
+│   │   ├── Dockerfile
+│   │   └── target/
+│   │
+│   ├── application-service/         # Application Service
+│   │   ├── src/main/java/
+│   │   │   └── com/jobportal/appservice/
+│   │   │       ├── controller/      # Application endpoints
+│   │   │       ├── service/         # Application logic
+│   │   │       ├── model/           # Application model
+│   │   │       └── repository/      # MongoDB access
+│   │   ├── src/main/resources/
+│   │   │   └── application.yml
+│   │   ├── pom.xml
+│   │   ├── Dockerfile
+│   │   └── target/
+│   │
+│   ├── init-mongo.js                # MongoDB initialization script
+│   └── docker-compose-microservices.yml
 │
 ├── full-stack-job-portal-client-main/  # React frontend
 │   ├── src/
-│   │   ├── components/              # Reusable React components
+│   │   ├── components/              # Reusable components
 │   │   │   ├── Logo.jsx
 │   │   │   ├── Navbar.jsx
 │   │   │   ├── AllJobsPage/
+│   │   │   │   ├── JobCard.jsx
+│   │   │   │   ├── JobsListCom.jsx
+│   │   │   │   ├── PaginationCom.jsx
+│   │   │   │   └── SearchAndFilter.jsx
 │   │   │   ├── MyJobsPage/
+│   │   │   │   ├── Applicant.jsx
+│   │   │   │   └── Recruiter.jsx
 │   │   │   ├── Home Page/
-│   │   │   ├── shared/              # Protected routes, layouts
+│   │   │   │   ├── Brands.jsx
+│   │   │   │   ├── HowWorks.jsx
+│   │   │   │   ├── PopularCategory.jsx
+│   │   │   │   ├── Team.jsx
+│   │   │   │   └── Testimonial.jsx
+│   │   │   ├── shared/
+│   │   │   │   ├── CommonProtectRoute.jsx
+│   │   │   │   ├── DashboardLayout.jsx
+│   │   │   │   ├── DashboardNavbar.jsx
+│   │   │   │   ├── DashboardNavLinks.jsx
+│   │   │   │   └── ...
 │   │   │   └── index.js
 │   │   ├── pages/                   # Page components
 │   │   │   ├── Landing.jsx
 │   │   │   ├── Register.jsx
 │   │   │   ├── Login.jsx
 │   │   │   ├── AllJobs.jsx
+│   │   │   ├── Job.jsx              # Single job detail
 │   │   │   ├── Profile.jsx
-│   │   │   ├── Admin.jsx
-│   │   │   ├── ManageJobs.jsx
-│   │   │   └── ...
-│   │   ├── context/                 # Global state management
-│   │   │   ├── UserContext.jsx
-│   │   │   └── JobContext.jsx
-│   │   ├── utils/                   # Utility functions
+│   │   │   ├── EditProfile.jsx
+│   │   │   ├── Admin.jsx            # Admin dashboard
+│   │   │   ├── Stats.jsx            # Dashboard statistics
+│   │   │   ├── ManageJobs.jsx       # Manage jobs (Recruiter)
+│   │   │   ├── ManageUsers.jsx      # Manage users (Admin)
+│   │   │   ├── AddJob.jsx
+│   │   │   ├── EditJob.jsx
+│   │   │   ├── DeleteJob.jsx
+│   │   │   ├── MyJobs.jsx           # Applied jobs
+│   │   │   ├── Error.jsx
+│   │   │   ├── ErrorJob.jsx
+│   │   │   ├── Footer.jsx
+│   │   │   ├── HomeLayout.jsx
+│   │   │   └── index.js
+│   │   ├── context/                 # Global state
+│   │   │   ├── UserContext.jsx      # Current user state
+│   │   │   └── JobContext.jsx       # Job listings state
+│   │   ├── utils/                   # Utilities
 │   │   │   ├── FetchHandlers.js     # API calls
-│   │   │   ├── JobData.js
+│   │   │   ├── JobData.js           # Job constants
 │   │   │   └── DashboardNavLinkData.jsx
 │   │   ├── Router/
 │   │   │   └── Routes.jsx           # Route definitions
-│   │   ├── Layout/                  # Layout wrappers
-│   │   │   ├── HomeLayout.jsx
-│   │   │   └── DashboardLayout.jsx
+│   │   ├── Layout/
+│   │   │   ├── DashboardLayout.jsx
+│   │   │   └── HomeLayout.jsx
+│   │   ├── assets/                  # Media files
+│   │   │   ├── css/
+│   │   │   └── media/
+│   │   ├── App.css
+│   │   ├── index.css
 │   │   ├── App.jsx
 │   │   └── main.jsx
-│   ├── public/                      # Static assets
-│   ├── Dockerfile                   # Docker build config
-│   ├── nginx.conf                   # Nginx configuration
-│   ├── package.json                 # NPM dependencies
-│   ├── vite.config.js              # Vite configuration
-│   └── .env                         # Environment variables
+│   ├── public/
+│   │   └── uploads/                 # User resumes storage
+│   ├── Dockerfile
+│   ├── nginx.conf                   # Nginx reverse proxy
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
+│   ├── vercel.json
+│   └── .env                         # Frontend environment
 │
-├── docker-compose.yml               # Docker Compose orchestration
-├── README.md                        # Quick start guide
-└── README_DETAILED.md              # This file
+├── docker-compose-microservices.yml # Docker Compose orchestration
+├── .env                             # Environment variables
+├── README.md                        # This file
+└── backupfile                       # Backup directory
 
 ```
 
@@ -203,40 +290,69 @@ job-portal/
 ## ✨ Features
 
 ### 🔐 Authentication & Authorization
-- User registration with email and secure password
-- Login with JWT token generation
-- HTTP-only cookie for token storage
-- Role-based access control (User, Recruiter, Admin)
-- Automatic admin creation for first user
-- Protected routes and endpoints
+- User registration with email and secure password validation
+- Login with JWT token generation (24-hour expiry)
+- HTTP-only cookie for secure token storage
+- Role-based access control (USER, RECRUITER, ADMIN)
+- Automatic admin creation for first registered user
+- Protected routes with role-based access
+- Secure JWT validation via API Gateway
 
 ### 👤 User Management
-- Create and edit user profiles
-- Upload resumes
-- View personal job applications
-- Update location, gender, and profile information
-- Search and filter jobs
+- **User Profile Management**
+  - Create and update user profiles
+  - Upload and manage resumes
+  - Update location, gender, and profile information
+  - View personal job applications and status
 
-### 💼 Job Management (Recruiters)
-- Post new job listings
-- Edit existing job postings
-- Delete job listings
-- View job applicants
-- Change job status (Open/Closed/On Hold)
-- Filter and search job listings
+- **Admin User Management** (NEW)
+  - View all registered users
+  - Change user roles (User → Recruiter → Admin)
+  - Delete users from the system
+  - Edit user profile information
+  - Real-time user list updates after actions
+  - Search and filter users
+
+### 💼 Job Management
+- **Job Seeker Features**
+  - Browse all available jobs
+  - Search and filter jobs by title, location, type
+  - Apply for jobs (one-click apply)
+  - Track application status (Pending/Approved/Rejected)
+  - View applied jobs history
+  - View detailed job information
+
+- **Recruiter Features**
+  - Post new job listings
+  - Edit existing job postings
+  - Delete job listings
+  - View all applicants for each job
+  - Change job status (Open/Closed/On Hold)
+  - Track total applications
+  - Manage multiple job postings
 
 ### 📊 Admin Dashboard
-- View all users and jobs statistics
-- Manage user roles (promote to recruiter/admin)
-- Remove users or jobs
-- Monthly statistics and analytics
-- Overall platform management
+- **Statistics & Analytics**
+  - Total users count (by role breakdown)
+  - Total job postings
+  - Total applications
+  - Pending, approved, and rejected applications count
+  - Monthly job posting trends
+  - Real-time data visualization with charts
+
+- **Administrative Controls**
+  - Manage all users (view, edit, delete, change roles)
+  - Manage all jobs (view, delete, change status)
+  - View system-wide statistics
+  - Monitor platform activity
 
 ### 📋 Job Applications
-- Apply for jobs (one-click apply)
-- Track application status (Pending/Approved/Rejected)
-- View applied jobs history
-- View detailed job information
+- Apply for jobs with single click
+- Track application status in real-time
+- View applied jobs history with status
+- Recruiters can view detailed applicant information
+- Update application status (Approve/Reject)
+- Application notifications
 
 ---
 
@@ -305,30 +421,96 @@ cors:
 
 ## ▶️ Running the Application
 
-### Option 1: Using Docker Compose (Recommended)
+### Option 1: Using Docker Compose (Recommended) - Microservices
 
 #### Build and Start All Services
+
 ```bash
-# Start all services in background
-docker-compose up -d --build
+# Navigate to project directory
+cd /home/tushar/project/Job_portal
+
+# Start all microservices with Docker Compose
+docker-compose -f docker-compose-microservices.yml up -d --build
 
 # Check if all containers are running
-docker-compose ps
+docker-compose -f docker-compose-microservices.yml ps
 
-# View logs
-docker-compose logs -f
+# View logs for all services
+docker-compose -f docker-compose-microservices.yml logs -f
+
+# View logs for specific service
+docker-compose -f docker-compose-microservices.yml logs -f api-gateway
+docker-compose -f docker-compose-microservices.yml logs -f auth-service
+docker-compose -f docker-compose-microservices.yml logs -f user-service
+docker-compose -f docker-compose-microservices.yml logs -f job-service
+docker-compose -f docker-compose-microservices.yml logs -f application-service
+docker-compose -f docker-compose-microservices.yml logs -f frontend
 
 # Stop all services
-docker-compose down
+docker-compose -f docker-compose-microservices.yml down
 
-# Stop and remove all data
-docker-compose down -v
+# Stop all services and remove volumes (clean database)
+docker-compose -f docker-compose-microservices.yml down -v
+
+# Rebuild specific service
+docker-compose -f docker-compose-microservices.yml up -d --build frontend
 ```
 
 #### Access the Application
+
+After all containers are running:
+
 - **Frontend**: http://localhost/
-- **Backend API**: http://localhost:3000/api/v1/
-- **MongoDB**: mongodb://localhost:27017/job-portal
+  - Home page, landing page
+  - All jobs browsing
+  - User registration and login
+  - User dashboard
+  - Admin dashboard
+
+- **API Gateway**: http://localhost:8080
+  - Base URL for all API endpoints
+  - All requests route through gateway
+  - JWT validation happens here
+  - Example: http://localhost:8080/api/v1/users
+
+- **Individual Services** (for debugging):
+  - Auth Service: http://localhost:3001
+  - User Service: http://localhost:3002
+  - Job Service: http://localhost:3003
+  - Application Service: http://localhost:3004
+
+- **MongoDB**: mongodb://localhost:27017
+  - Databases: auth-db, user-db, job-db, application-db
+  - Access with MongoDB Compass or mongosh
+
+#### Microservices Startup Order
+
+Services automatically start in dependency order:
+1. MongoDB starts first (required by all services)
+2. API Gateway starts
+3. Auth Service, User Service, Job Service, Application Service start in parallel
+4. Frontend (Nginx) starts last
+
+#### Health Checks
+
+Each microservice includes health check endpoints:
+
+```bash
+# Check API Gateway
+curl http://localhost:8080/actuator/health
+
+# Check Auth Service
+curl http://localhost:3001/actuator/health
+
+# Check User Service  
+curl http://localhost:3002/actuator/health
+
+# Check Job Service
+curl http://localhost:3003/actuator/health
+
+# Check Application Service
+curl http://localhost:3004/actuator/health
+```
 
 ---
 
@@ -371,9 +553,46 @@ npm run dev
 
 ---
 
+## 🆕 Recent Updates (January 2026)
+
+### Fixed Issues
+- ✅ Fixed Admin Dashboard statistics display - now shows correct user counts, job counts, and application statistics
+- ✅ Fixed ManageUsers page showing empty user list - resolved database configuration mismatch
+- ✅ Fixed data extraction from API responses - all components now properly access result property
+- ✅ Fixed case-insensitive role comparison for proper role display
+- ✅ Fixed user ID field mapping - backend uses `id` field, frontend now correctly accesses it
+
+### New Features Added
+- ✅ **User Delete Functionality** - Admins can now delete users with confirmation dialog
+- ✅ **User Edit Functionality** - Admins can edit user email, location, and gender
+- ✅ **Real-time Page Refresh** - After deleting/editing users or changing roles, page automatically refreshes with updated data
+- ✅ **Improved Error Handling** - Better error messages and user feedback across all operations
+- ✅ **Delete/Edit Buttons UI** - Color-coded action buttons (red for delete, green for edit)
+
+### Database Architecture
+- **auth-db**: Stores user authentication data (emails, passwords, roles)
+- **user-db**: Stores user profile information (location, gender, resume)
+- **job-db**: Stores job postings and related data
+- **application-db**: Stores job applications and statuses
+- User Service now correctly reads from auth-db instead of empty user-db
+
+### Bug Fixes
+- Fixed API response data binding in Admin.jsx
+- Fixed API response data binding in Stats.jsx  
+- Fixed ManageUsers page error handling
+- Fixed MongoDB ID field access (use `id` not `_id` from API)
+- Fixed delete and edit button visibility
+- Implemented awaited refetch for immediate data refresh
+
+---
+
 ## 🔌 API Endpoints
 
-### Authentication Endpoints
+**Base URL**: `http://localhost:8080/api/v1`
+
+All requests route through the API Gateway (port 8080) which validates JWT tokens and routes to appropriate microservices.
+
+### Authentication Endpoints (Auth Service)
 
 #### Register User
 ```http
@@ -1193,9 +1412,39 @@ This project is licensed under the MIT License - see LICENSE file for details.
 - Spring Boot team for excellent framework
 - React team for UI library
 - MongoDB for database
+- Docker and Docker Compose for containerization
+- Spring Cloud Gateway for API routing
 - All contributors and testers
 
 ---
 
-**Last Updated**: January 27, 2026
-**Version**: 1.0.0
+## 📊 Project Statistics
+
+- **Microservices**: 5 services + 1 API Gateway
+- **Databases**: 4 separate MongoDB databases
+- **Frontend Components**: 20+ reusable React components
+- **Backend Endpoints**: 40+ REST API endpoints
+- **Authentication Method**: JWT with HTTP-only cookies
+- **Deployment**: Docker Compose containerized
+
+---
+
+## 🚀 Performance & Scalability
+
+### Current Setup
+- Horizontal scaling ready with microservices architecture
+- Each service can be scaled independently
+- API Gateway distributes requests
+- Database per service pattern (avoiding shared database bottleneck)
+
+### Optimization Features
+- API Gateway caching ready
+- Async operations for job applications
+- Connection pooling for MongoDB
+- Frontend optimized with React Query
+
+---
+
+**Last Updated**: January 29, 2026  
+**Version**: 1.1.0 (Microservices with Admin Features)  
+**Status**: ✅ Production Ready
