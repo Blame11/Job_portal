@@ -83,29 +83,6 @@ const ManageJobs = () => {
         }
     };
 
-    const updateJobStatus = async (jobId, newStatus) => {
-        try {
-            const response = await axios.patch(
-                buildApiUrl(`/api/v1/jobs/${jobId}/status`),
-                { jobStatus: newStatus },
-                { withCredentials: true }
-            );
-
-            refetch();
-            Swal.fire({
-                icon: "success",
-                title: "Done",
-                text: `Job status updated to ${newStatus}`,
-            });
-        } catch (error) {
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: error?.response?.data?.message || error.message,
-            });
-        }
-    };
-
     if (isPending) {
         return <LoadingComTwo />;
     }
@@ -126,6 +103,7 @@ const ManageJobs = () => {
             </h2>
         );
     }
+    
     return (
         <Wrapper>
             <div className="title-row">
@@ -154,40 +132,9 @@ const ManageJobs = () => {
                                     <td>{job?.position}</td>
                                     <td>{job?.company}</td>
                                     <td>
-                                        <div className="status-cell">
-                                            <span className={`status-badge ${job?.jobStatus}`}>
-                                                {job?.jobStatus}
-                                            </span>
-                                            <div className="status-buttons">
-                                                {job?.jobStatus !== "pending" && (
-                                                    <button
-                                                        className="status-btn pending"
-                                                        onClick={() => updateJobStatus(job.id, "pending")}
-                                                        title="Mark as Pending"
-                                                    >
-                                                        Pending
-                                                    </button>
-                                                )}
-                                                {job?.jobStatus !== "interview" && (
-                                                    <button
-                                                        className="status-btn interview"
-                                                            onClick={() => updateJobStatus(job.id, "interview")}
-                                                        title="Mark as Interview"
-                                                    >
-                                                        Interview
-                                                    </button>
-                                                )}
-                                                {job?.jobStatus !== "declined" && (
-                                                    <button
-                                                        className="status-btn declined"
-                                                        onClick={() => updateJobStatus(job.id, "declined")}
-                                                        title="Mark as Declined (will reject pending applicants)"
-                                                    >
-                                                        Decline
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <span className={`status-badge ${job?.status}`}>
+                                            {job?.status}
+                                        </span>
                                     </td>
                                     <td>{job?.createdBy?.username}</td>
                                     <td className="action-row">
@@ -333,42 +280,6 @@ const Wrapper = styled.section`
     .status-badge.declined {
         background-color: #ef4444;
         color: white;
-    }
-    .status-buttons {
-        display: flex;
-        gap: 4px;
-        flex-wrap: wrap;
-    }
-    .status-btn {
-        padding: 4px 8px;
-        border: none;
-        border-radius: 3px;
-        font-size: 11px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-transform: capitalize;
-    }
-    .status-btn.pending {
-        background-color: #fbbf24;
-        color: #78350f;
-    }
-    .status-btn.pending:hover {
-        background-color: #f59e0b;
-    }
-    .status-btn.interview {
-        background-color: #3b82f6;
-        color: white;
-    }
-    .status-btn.interview:hover {
-        background-color: #2563eb;
-    }
-    .status-btn.declined {
-        background-color: #ef4444;
-        color: white;
-    }
-    .status-btn.declined:hover {
-        background-color: #dc2626;
     }
 `;
 

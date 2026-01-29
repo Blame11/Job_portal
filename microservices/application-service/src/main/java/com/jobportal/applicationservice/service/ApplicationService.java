@@ -35,13 +35,27 @@ public class ApplicationService {
     private String jobServiceUrl;
 
     public ApplicationResponse applyForJob(String userId, String jobId, MultipartFile resume) throws Exception {
-        // Validate job exists
+        // Validate job exists and get recruiter info
+        String recruiterId = null;
         try {
             String jobUrl = jobServiceUrl + "/api/v1/jobs/internal/" + jobId;
-            restTemplate.getForObject(jobUrl, Object.class);
-            log.info("Job validated: {}", jobId);
+            // The internal endpoint returns JobResponse directly, not wrapped
+            Map<String, Object> jobResponse = restTemplate.getForObject(jobUrl, Map.class);
+            log.info("Job response: {}", jobResponse);
+            
+            // Extract recruiter ID from job details
+            if (jobResponse != null) {
+                recruiterId = (String) jobResponse.get("createdBy");
+                log.info("Extracted recruiter ID: {}", recruiterId);
+            }
         } catch (Exception e) {
+            log.error("Error fetching job: {}", e.getMessage());
             throw new IllegalArgumentException("Job not found");
+        }
+        
+        if (recruiterId == null) {
+            log.error("Recruiter ID is null for job: {}", jobId);
+            throw new IllegalArgumentException("Could not determine recruiter for this job");
         }
 
         // Check if already applied
@@ -52,14 +66,10 @@ public class ApplicationService {
         // Upload resume
         String resumePath = fileUploadService.uploadResume(resume);
 
-        // Get recruiter info (in real scenario, would fetch from job details)
-        // For now, using a placeholder
-        String recruiterId = jobId; // Will be replaced with actual recruiter ID from job
-
         Application application = new Application(jobId, userId, recruiterId, resumePath);
         Application savedApp = applicationRepository.save(application);
         
-        log.info("Application created: {} for job: {} by user: {}", savedApp.getId(), jobId, userId);
+        log.info("Application created: {} for job: {} by user: {} with recruiter: {}", savedApp.getId(), jobId, userId, recruiterId);
         return mapToResponse(savedApp);
     }
 
@@ -158,7 +168,7 @@ public class ApplicationService {
     
     private Map<String, Object> getJobDetails(String jobId) {
         try {
-            String jobUrl = jobServiceUrl + "/internal/jobs/" + jobId;
+            String jobUrl = jobServiceUrl + "/api/v1/jobs/internal/" + jobId;
             Map<String, Object> jobResponse = restTemplate.getForObject(jobUrl, Map.class);
             if (jobResponse != null) {
                 return jobResponse;
@@ -168,4 +178,22 @@ public class ApplicationService {
         }
         return null;
     }
+
+    public byte[] getResumeBytes(String applicationId) throws Exception {
+        var application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new IllegalArgumentException("Application not found"));
+
+        String resumePath = application.getResumePath();
+        if (resumePath == null || resumePath.isBlank()) {
+            throw new IllegalArgumentException("No resume available for this application");
+        }
+
+        try {
+            return fileUploadService.readFile(resumePath);
+        } catch (Exception e) {
+            log.error("Error reading resume file for application {}: {}", applicationId, e.getMessage());
+            throw new IllegalArgumentException("Could not read resume file");
+        }
+    }
+
 }

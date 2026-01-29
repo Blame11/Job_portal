@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { buildApiUrl } from "../../utils/FetchHandlers";
 import LoadingComTwo from "../shared/LoadingComTwo";
@@ -39,6 +39,7 @@ const Applicant = () => {
         isError,
         data: jobs,
         error,
+        refetch,
     } = useQuery({
         queryKey: ["my-jobs"],
         queryFn: async () => {
@@ -48,7 +49,23 @@ const Applicant = () => {
             );
             return response?.data?.result;
         },
+        // Refetch every 5 seconds to keep data fresh
+        refetchInterval: 5000,
     });
+
+    // Refetch when page becomes visible
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                refetch();
+            }
+        };
+        
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+    }, [refetch]);
 
     if (isLoading) {
         return <LoadingComTwo />;

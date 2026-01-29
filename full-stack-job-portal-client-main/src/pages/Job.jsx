@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { useParams } from "react-router-dom";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSingleHandler, buildApiUrl } from "../utils/FetchHandlers";
 import LoadingComTwo from "../components/shared/LoadingComTwo";
 
@@ -23,20 +23,21 @@ dayjs.extend(advancedFormat);
 const Job = () => {
     const { id } = useParams();
     const { user } = useUserContext();
+    const queryClient = useQueryClient();
     const {
         isLoading,
         isError,
         data: job,
         error,
     } = useQuery({
-        queryKey: ["job"],
+        queryKey: ["job", id],
         queryFn: () =>
             getSingleHandler(
                 buildApiUrl(`/api/v1/jobs/${id}`)
             ),
     });
 
-    const date = dayjs(job?.jobDeadline).format("MMM Do, YYYY");
+    const date = dayjs(job?.createdAt).format("MMM Do, YYYY");
 
     const handleApply = async () => {
         if (!user) {
@@ -112,21 +113,18 @@ const Job = () => {
                 title: "Hurray...",
                 text: response?.data?.message,
             });
+            // Invalidate recruiter applications cache so they see the new application
+            queryClient.invalidateQueries({ queryKey: ["rec-jobs"] });
+            // Also invalidate the candidate's applications
+            queryClient.invalidateQueries({ queryKey: ["applicant-jobs"] });
         } catch (error) {
             console.log(error);
-            if (error?.response?.data?.error) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Oops...",
-                    text: error?.response?.data?.error[0].msg,
-                });
-            } else {
-                Swal.fire({
-                    icon: "error",
-                    title: "Oops...",
-                    text: error?.response?.data || error.message,
-                });
-            }
+            const errorMessage = error?.response?.data?.message || error?.response?.data || error.message || "Failed to apply for job";
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: errorMessage,
+            });
         }
     };
 
@@ -154,51 +152,37 @@ const Job = () => {
                     </h4>
                     <h4 className="post-date">
                         <MdAccessTime className="text-lg mr-1" />
-                        {dayjs(job?.result?.createdAt).format("MMM Do, YYYY")}
+                        {dayjs(job?.createdAt).format("MMM Do, YYYY")}
                     </h4>
                 </div>
                 <div className="middle-row">
                     <div className="description">
                         <h3 className="sec-title">description</h3>
-                        <p className="">{job?.jobDescription}</p>
+                        <p className="">{job?.description}</p>
                     </div>
                     <h4 className="deadline">
-                        Deadline: <span className="">{date}</span>
+                        Posted On: <span className="">{date}</span>
                     </h4>
-                    <h4 className="vacancy">
-                        Job Vacancy: <span className="">{job?.jobVacancy}</span>
+                    <h4 className="location">
+                        Location: <span className="">{job?.location}</span>
+                    </h4>
+                    <h4 className="salary">
+                        Salary: <span className="">{job?.salary}</span>
                     </h4>
                     <div className="requirement">
-                        <h3 className="sec-title">Requirements</h3>
-                        <ul>
-                            {job?.jobSkills?.map((skill) => (
-                                <li key={skill}>{skill}</li>
-                            ))}
-                        </ul>
+                        <h3 className="sec-title">Job Type</h3>
+                        <p className="capitalize">{job?.jobType}</p>
                     </div>
                     <div className="facility">
-                        <h3 className="sec-title">Facilities</h3>
-                        <ul>
-                            {job?.jobFacilities?.map((facility) => (
-                                <li key={facility}>{facility}</li>
-                            ))}
-                        </ul>
+                        <h3 className="sec-title">Company</h3>
+                        <p className="capitalize">{job?.company}</p>
                     </div>
                     <h4 className="salary">
-                        Salary: <span className="">{job?.jobSalary} TK</span>
+                        Salary: <span className="">{job?.salary}</span>
                     </h4>
                     <div className="apply">
-                        <h3 className="sec-title">To apply</h3>
-                        {user?.role === "user" ? (
-                            <button onClick={handleApply} className="apply-btn">
-                                Apply Now
-                            </button>
-                        ) : (
-                            <>
-                                <p className="intro">send your cv/resume</p>
-                                <p className="info">Email: {job?.jobContact}</p>
-                            </>
-                        )}
+                        <h3 className="sec-title">Position Posted By</h3>
+                        <p className="capitalize">{job?.createdBy}</p>
                     </div>
                 </div>
             </Wrapper>

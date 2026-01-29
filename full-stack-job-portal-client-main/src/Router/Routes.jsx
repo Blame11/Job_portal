@@ -10,7 +10,6 @@ import {
     Error,
     AllJobs,
     AboutUs,
-    Stats,
     Profile,
     Admin,
     EditJob,
@@ -87,14 +86,6 @@ const router = createBrowserRouter([
                     {
                         path: "edit-profile/:id",
                         element: <EditProfile />,
-                    },
-                    {
-                        path: "stats",
-                        element: (
-                            <ProtectAdminRoute>
-                                <Stats />
-                            </ProtectAdminRoute>
-                        ),
                     },
                     {
                         path: "add-jobs",

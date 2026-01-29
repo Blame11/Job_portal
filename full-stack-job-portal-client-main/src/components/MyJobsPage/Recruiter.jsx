@@ -1,9 +1,9 @@
 import axios from "axios";
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import LoadingComTwo from "../shared/LoadingComTwo";
 
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateHandler, buildApiUrl } from "../../utils/FetchHandlers";
 import Swal from "sweetalert2";
 
@@ -26,7 +26,74 @@ const Recruiter = () => {
             );
             return response?.data?.result;
         },
+        // Refetch every 5 seconds to keep data fresh
+        refetchInterval: 5000,
     });
+
+    const queryClient = useQueryClient();
+
+    // If backend didn't include jobPosition/jobCompany, fetch job details per application
+    useEffect(() => {
+        if (!jobs || jobs.length === 0) return;
+
+        const missing = jobs.filter((j) => !j.jobPosition || !j.jobCompany);
+        if (missing.length === 0) return;
+
+        const fetchDetails = async () => {
+            try {
+                const results = await Promise.all(
+                    missing.map(async (app) => {
+                        const jobId = app.jobId || app.job?.id || app.id;
+                        if (!jobId) return null;
+                        try {
+                            const res = await axios.get(buildApiUrl(`/api/v1/jobs/${jobId}`), { withCredentials: true });
+                            const payload = res?.data?.result || res?.data || null;
+                            if (!payload) return null;
+                            return {
+                                applicationId: app.id,
+                                jobPosition: payload.position || payload.jobPosition || payload.positionName,
+                                jobCompany: payload.company || payload.jobCompany,
+                            };
+                        } catch (e) {
+                            return null;
+                        }
+                    })
+                );
+
+                const valid = results.filter(Boolean);
+                if (valid.length === 0) return;
+
+                queryClient.setQueryData(["rec-jobs"], (old) => {
+                    if (!Array.isArray(old)) return old;
+                    return old.map((item) => {
+                        const found = valid.find((r) => r.applicationId === item.id);
+                        if (found) {
+                            return { ...item, jobPosition: item.jobPosition || found.jobPosition, jobCompany: item.jobCompany || found.jobCompany };
+                        }
+                        return item;
+                    });
+                });
+            } catch (e) {
+                // ignore
+            }
+        };
+
+        fetchDetails();
+    }, [jobs, queryClient]);
+
+    // Refetch when page becomes visible
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                refetch();
+            }
+        };
+        
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+    }, [refetch]);
 
     const updateJobStatusMutation = useMutation({
         mutationFn: updateHandler,
@@ -35,7 +102,7 @@ const Recruiter = () => {
             Swal.fire({
                 icon: "success",
                 title: "Status Updated",
-                text: data?.message,
+                text: data?.message || "Status updated successfully",
             });
         },
         onError: (error) => {
@@ -141,8 +208,8 @@ const Recruiter = () => {
                             return (
                                 <tr key={job?.id}>
                                     <td>{i}</td>
-                                    <td>{job?.position}</td>
-                                    <td>{job?.company}</td>
+                                    <td>{job?.jobPosition || job?.position}</td>
+                                    <td>{job?.jobCompany || job?.company}</td>
                                     <td>{job?.status}</td>
                                     <td className="action-row">
                                         <button

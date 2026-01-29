@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { getSingleHandler, updateHandler, buildApiUrl } from "../utils/FetchHandlers";
 import { useUserContext } from "../context/UserContext";
@@ -28,6 +28,7 @@ const queryClient = new QueryClient(); // Create a client
 const EditJob = () => {
     const { user } = useUserContext();
     const { id } = useParams();
+    const navigate = useNavigate();
     
     // Check if user is recruiter
     if (user?.role !== "recruiter") {
@@ -43,7 +44,7 @@ const EditJob = () => {
         data: job,
         error,
     } = useQuery({
-        queryKey: ["updateJob"],
+        queryKey: ["editJob", id],
         queryFn: () =>
             getSingleHandler(
                 buildApiUrl(`/api/v1/jobs/${id}`)
@@ -59,26 +60,55 @@ const EditJob = () => {
         handleSubmit,
         watch,
         reset,
+        setValue,
         formState: { errors },
-    } = useForm();
+    } = useForm({
+        mode: 'onChange',
+    });
+
+    const watchedValues = watch();
 
     useEffect(() => {
-        if (job?.jobDeadline) {
-            const dateObject = new Date(job?.jobDeadline);
-            setDeadline(dateObject || new Date());
+        if (job) {
+            console.log("DEBUG: Job data received:", job);
+            console.log("DEBUG: Job keys:", Object.keys(job));
+            // Set form values from fetched job data using backend field names
+            setValue("position", job?.title || job?.position || "");
+            setValue("company", job?.company || "");
+            setValue("location", job?.location || "");
+            setValue("status", job?.status?.toLowerCase() || "");
+            setValue("type", job?.jobType?.toLowerCase() || "");
+            setValue("vacancy", job?.vacancy || "");
+            setValue("salary", job?.salary || "");
+            setValue("contact", job?.contact || "");
+            setValue("description", job?.description || "");
+            
+            // Set date from createdAt (or use current date as fallback)
+            if (job?.createdAt) {
+                const dateObject = new Date(job?.createdAt);
+                setDeadline(dateObject || new Date());
+            }
+            
+            // Note: skills and facilities might not exist in backend, set to empty arrays
+            setSkills(job?.skills || []);
+            setFacilities(job?.facilities || []);
         }
-        setSkills(job?.jobSkills || []);
-        setFacilities(job?.jobFacilities || []);
-    }, [job]);
+    }, [job, setValue]);
 
     const updateJobMutation = useMutation({
         mutationFn: updateHandler,
         onSuccess: (data, variable, context) => {
-            queryClient.invalidateQueries({ queryKey: ["updateJob"] });
+            // Invalidate the edit job query
+            queryClient.invalidateQueries({ queryKey: ["editJob", id] });
+            // Invalidate the manage jobs list so recruiter sees updated status
+            queryClient.invalidateQueries({ queryKey: ["my-jobs"] });
             Swal.fire({
                 icon: "success",
                 title: "Job Updated",
                 text: data?.message,
+            }).then(() => {
+                // Redirect to Manage Jobs page after user confirms
+                navigate("/dashboard/manage-jobs");
             });
         },
         onError: (error, variables, context) => {
@@ -86,7 +116,7 @@ const EditJob = () => {
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
-                text: error?.message,
+                text: error?.message || "Failed to update job",
             });
         },
     });
@@ -110,19 +140,20 @@ const EditJob = () => {
             return;
         }
 
+        // Build payload using backend field names (not job* prefix)
         const updateJob = {
+            title: data?.position,
             company: data?.company,
-            position: data?.position,
-            jobStatus: data?.status?.toUpperCase() || "PENDING",
+            status: data?.status?.toUpperCase() || "ACTIVE",
             jobType: data?.type?.toLowerCase() || "full-time",
-            jobLocation: data?.location,
-            jobVacancy: data?.vacancy,
-            jobSalary: data?.salary,
-            jobDeadline: deadline + "",
-            jobDescription: data?.description,
-            jobSkills: skills,
-            jobFacilities: facilities,
-            jobContact: data?.contact,
+            location: data?.location,
+            vacancy: data?.vacancy,
+            salary: data?.salary,
+            createdAt: deadline + "",
+            description: data?.description,
+            skills: skills,
+            facilities: facilities,
+            contact: data?.contact,
         };
         updateJobMutation.mutate({
             body: updateJob,
@@ -158,7 +189,7 @@ const EditJob = () => {
                                     id="position"
                                     name="position"
                                     placeholder="Job Position"
-                                    defaultValue={job?.position}
+                                    value={watchedValues?.position || ""}
                                     {...register("position", {
                                         required: {
                                             value: true,
@@ -189,7 +220,7 @@ const EditJob = () => {
                                     id="company"
                                     name="company"
                                     placeholder="Company Name"
-                                    defaultValue={job?.company}
+                                    value={watchedValues?.company || ""}
                                     {...register("company", {
                                         required: {
                                             value: true,
@@ -220,7 +251,7 @@ const EditJob = () => {
                                     id="location"
                                     name="location"
                                     placeholder="Job Location"
-                                    defaultValue={job?.jobLocation}
+                                    value={watchedValues?.location || ""}
                                     {...register("location", {
                                         required: {
                                             value: true,
@@ -247,7 +278,7 @@ const EditJob = () => {
                             <div className="row">
                                 <label htmlFor="status">Job Status</label>
                                 <select
-                                    defaultValue={job?.jobStatus?.toLowerCase() || "none"}
+                                    value={watchedValues?.status || "none"}
                                     name="status"
                                     id="stauts"
                                     {...register("status", {
@@ -286,7 +317,7 @@ const EditJob = () => {
                             <div className="row">
                                 <label htmlFor="type">Job Type</label>
                                 <select
-                                    defaultValue={job?.jobType?.toLowerCase() || "none"}
+                                    value={watchedValues?.type || "none"}
                                     name="type"
                                     id="type"
                                     {...register("type", {
@@ -328,7 +359,7 @@ const EditJob = () => {
                                     id="vacancy"
                                     name="vacancy"
                                     placeholder="Job Vacancy"
-                                    defaultValue={job?.jobVacancy}
+                                    value={watchedValues?.vacancy || ""}
                                     {...register("vacancy", {
                                         required: {
                                             value: true,
@@ -361,7 +392,7 @@ const EditJob = () => {
                                     id="salary"
                                     name="salary"
                                     placeholder="Job salary"
-                                    defaultValue={job?.jobSalary}
+                                    value={watchedValues?.salary || ""}
                                     {...register("salary", {
                                         required: {
                                             value: true,
@@ -403,7 +434,7 @@ const EditJob = () => {
                                     id="contact"
                                     name="contact"
                                     placeholder="Job Contact"
-                                    defaultValue={job?.jobContact}
+                                    value={watchedValues?.contact || ""}
                                     {...register("contact", {
                                         required: {
                                             value: true,
@@ -464,7 +495,7 @@ const EditJob = () => {
                                 name="description"
                                 placeholder="Job Description"
                                 className="w-full max-w-none"
-                                defaultValue={job?.jobDescription}
+                                value={watchedValues?.description || ""}
                                 {...register("description", {
                                     required: {
                                         value: true,

@@ -1,6 +1,5 @@
 import React from "react";
 
-import { IoIosStats } from "react-icons/io";
 import { RiMenuAddFill } from "react-icons/ri";
 import { FiUser } from "react-icons/fi";
 import { FaUserShield } from "react-icons/fa";
@@ -13,11 +12,6 @@ const AdminLinks = [
         text: "profile",
         path: ".",
         icon: <FiUser />,
-    },
-    {
-        text: "stats",
-        path: "stats",
-        icon: <IoIosStats />,
     },
     {
         text: "admin",

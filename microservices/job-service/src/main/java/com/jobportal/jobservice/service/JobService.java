@@ -81,6 +81,9 @@ public class JobService {
         job.setCompany(request.getCompany());
         job.setPosition(request.getPosition());
         job.setJobType(request.getJobType());
+        if (request.getStatus() != null) {
+            job.setStatus(request.getStatus());
+        }
         job.setUpdatedAt(LocalDateTime.now());
 
         Job updatedJob = jobRepository.save(job);

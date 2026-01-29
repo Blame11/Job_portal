@@ -23,7 +23,7 @@ export const postHandler = async ({ url, body }) => {
 
 export const updateHandler = async ({ url, body }) => {
     const res = await axios.patch(buildApiUrl(url), body, { withCredentials: true });
-    return res?.data?.result;
+    return res?.data;
 };
 
 export const updateHandlerPut = async ({ url, body }) => {

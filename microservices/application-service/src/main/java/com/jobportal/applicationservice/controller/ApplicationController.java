@@ -117,9 +117,21 @@ public class ApplicationController {
 
     @GetMapping("/{id}/download-resume")
     public ResponseEntity<?> downloadResume(@PathVariable String id) {
-        // Implementation for file download
-        // In production, would need to serve the actual file
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        try {
+            byte[] data = applicationService.getResumeBytes(id);
+            org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(data);
+
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=resume")
+                    .contentLength(data.length)
+                    .contentType(org.springframework.http.MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(false, null, e.getMessage()));
+        } catch (Exception e) {
+            log.error("Download resume error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>(false, null, "Could not download resume"));
+        }
     }
 
     @GetMapping("/internal/counts")

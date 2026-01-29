@@ -15,4 +15,5 @@ public class CreateJobRequest {
     private String company;
     private String position;
     private String jobType; // FULL_TIME, PART_TIME, CONTRACT
+    private String status; // ACTIVE, CLOSED
 }

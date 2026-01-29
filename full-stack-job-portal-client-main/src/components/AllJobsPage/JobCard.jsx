@@ -134,7 +134,7 @@ const JobCard = ({ job }) => {
                     </div>
                     <div className="status capitalize">
                         <TbTargetArrow className="mr-2 text-lg" />
-                        <span className={job?.jobStatus}>{job?.jobStatus}</span>
+                        <span className={job?.status}>{job?.status}</span>
                     </div>
                 </div>
                 <div className="end-row">

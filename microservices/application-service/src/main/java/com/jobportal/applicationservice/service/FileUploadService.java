@@ -40,6 +40,23 @@ public class FileUploadService {
         return "/uploads/" + fileName;
     }
 
+    public byte[] readFile(String resumePath) throws IOException {
+        if (resumePath == null || resumePath.isBlank()) {
+            throw new IllegalArgumentException("Invalid resume path");
+        }
+
+        // resumePath is expected to be like /uploads/filename.ext
+        String fileName = Paths.get(resumePath).getFileName().toString();
+        Path uploadPath = Paths.get(uploadDir);
+        Path filePath = uploadPath.resolve(fileName);
+
+        if (!Files.exists(filePath)) {
+            throw new IOException("File not found: " + filePath.toString());
+        }
+
+        return Files.readAllBytes(filePath);
+    }
+
     public void validateFile(MultipartFile file) {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new IllegalArgumentException("File size exceeds 5MB limit");

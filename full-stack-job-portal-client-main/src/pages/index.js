@@ -14,5 +14,4 @@ export { default as Profile } from "./Profile";
 export { default as EditProfile } from "./EditProfile";
 export { default as ManageUsers } from "./ManageUsers";
 export { default as Register } from "./Register";
-export { default as Stats } from "./Stats";
 export { default as Error } from "./Error";
